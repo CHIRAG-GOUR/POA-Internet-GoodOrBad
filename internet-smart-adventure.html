@@ -1066,7 +1066,7 @@ function bringKids(root, bx, bz, gx, gz, rot){
 function showQuizModal(q){
   clearUI();
   const card = el('div', 'quiz-card');
-  card.style.cssText = 'position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);border:3px solid var(--blue);border-radius:20px;padding:20px 24px;box-shadow:0 14px 40px var(--shadow);z-index:90;max-width:540px;width:92%;text-align:center;animation:pop .3s ease-out;';
+  card.style.cssText = 'position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.98);backdrop-filter:blur(14px);border:3.5px solid var(--blue);border-radius:24px;padding:24px 28px;box-shadow:0 20px 60px rgba(15,23,42,0.35);z-index:90;max-width:600px;width:92%;text-align:center;animation:pop .3s cubic-bezier(.2,.9,.3,1.2);';
   
   const qTitle = el('div', '', `<h3 style="margin:0 0 14px;color:var(--blue-d);font-size:17px;font-weight:800;line-height:1.4">${q.question}</h3>`);
   card.appendChild(qTitle);
@@ -1076,7 +1076,7 @@ function showQuizModal(q){
   
   q.options.forEach((opt, optIdx) => {
     const btn = el('button', 'btn primary', opt);
-    btn.style.cssText = 'padding:12px 20px;font-size:15px;font-weight:700;border-radius:14px;cursor:pointer;flex:1;min-width:140px;box-shadow:0 4px 12px rgba(47,124,224,.3);';
+    btn.style.cssText = 'padding:14px 22px;font-size:15.5px;font-weight:700;border-radius:16px;cursor:pointer;flex:1;min-width:180px;box-shadow:0 6px 18px rgba(47,124,224,.35);line-height:1.4;transition:all .15s;';
     btn.onclick = () => {
       SFX.click();
       clearUI();
@@ -1315,7 +1315,7 @@ const Props={
     const webCam=new T.Mesh(new T.CircleGeometry(0.007,12), camMat); webCam.position.set(0,0.56,0.012); scrGroup.add(webCam);
     const camLed=new T.Mesh(new T.CircleGeometry(0.003,8), ledMat); camLed.position.set(0.02,0.56,0.012); scrGroup.add(camLed);
     
-    scrGroup.rotation.x = (open===false ? -0.05 : -1.88);
+    scrGroup.rotation.x = (open===false ? -0.05 : -0.26);
     g.add(scrGroup);
     
     const screenLight=new T.PointLight(0x70b5ff, 0.9, 2.5);
@@ -1434,7 +1434,8 @@ registerChapter({
     root.add(desk);
     
     const laptop = Props.laptop(true);
-    laptop.position.set(0, 1.0, -1.8);
+    laptop.scale.set(1.35, 1.35, 1.35);
+    laptop.position.set(0, 0.98, -1.8);
     root.add(laptop);
     
     const chairL = Props.chair(0x4b93ec); chairL.position.set(-1.25, 0, -1.1); chairL.rotation.y = 0.4; root.add(chairL);
@@ -1678,14 +1679,108 @@ registerChapter({
   build(root, api){
     addLights(root, 'warm'); ground(root, 0xedf4fa, 40);
     
-    const stand = cyl(0.12, 0.16, 2.2, 0x5a381b, 12); stand.position.set(0, 1.1, -1.5); root.add(stand);
-    const beam = box(4.4, 0.1, 0.2, 0x8b5a2b); beam.position.set(0, 2.2, -1.5); root.add(beam);
+    // === High-Fidelity 3D Antique Brass Balance Scale ===
+    const scaleGroup = new T.Group();
+    scaleGroup.position.set(0, 0, -1.5);
+    root.add(scaleGroup);
     
-    const panL = cyl(0.8, 0.8, 0.08, 0x4b93ec, 16); panL.position.set(-1.8, 1.5, -1.5); root.add(panL);
-    const panR = cyl(0.8, 0.8, 0.08, 0xff7a59, 16); panR.position.set(1.8, 1.5, -1.5); root.add(panR);
+    const brassMat = new T.MeshStandardMaterial({color:0xd4af37, metalness:0.85, roughness:0.25});
+    const woodMat = new T.MeshStandardMaterial({color:0x5c3317, roughness:0.6});
+    const goldMat = new T.MeshStandardMaterial({color:0xffd700, metalness:0.9, roughness:0.2});
     
-    const lblL = makeLabel('🌟 BENEFITS', {scale:0.4, fs:32, bg:'#2f7ce0', fg:'#fff'}); lblL.position.set(-1.8, 2.4, -1.5); root.add(lblL);
-    const lblR = makeLabel('⚠️ RISKS', {scale:0.4, fs:32, bg:'#ff7a59', fg:'#fff'}); lblR.position.set(1.8, 2.4, -1.5); root.add(lblR);
+    // 1. Ornate Tiered Base
+    const baseWood = new T.Mesh(new T.CylinderGeometry(1.6, 1.8, 0.22, 32), woodMat);
+    baseWood.position.y = 0.11; baseWood.castShadow = true; baseWood.receiveShadow = true;
+    scaleGroup.add(baseWood);
+    
+    const baseBrassTrim = new T.Mesh(new T.CylinderGeometry(1.4, 1.45, 0.08, 32), brassMat);
+    baseBrassTrim.position.y = 0.24; scaleGroup.add(baseBrassTrim);
+    
+    const standCollar = new T.Mesh(new T.CylinderGeometry(0.35, 0.5, 0.2, 24), brassMat);
+    standCollar.position.y = 0.36; scaleGroup.add(standCollar);
+    
+    // 2. Central Fluted Brass Pillar & Dial
+    const pillar = new T.Mesh(new T.CylinderGeometry(0.12, 0.18, 2.3, 24), brassMat);
+    pillar.position.y = 1.5; pillar.castShadow = true; scaleGroup.add(pillar);
+    
+    const dialBack = new T.Mesh(new T.CylinderGeometry(0.32, 0.32, 0.06, 24), brassMat);
+    dialBack.rotation.x = Math.PI/2; dialBack.position.set(0, 1.7, 0.14); scaleGroup.add(dialBack);
+    
+    const dialFace = new T.Mesh(new T.CircleGeometry(0.28, 24), new T.MeshBasicMaterial({color:0xffffff}));
+    dialFace.position.set(0, 1.7, 0.175); scaleGroup.add(dialFace);
+    
+    // Dial needle (moves when scale tilts)
+    const needle = new T.Mesh(new T.BoxGeometry(0.025, 0.38, 0.02), new T.MeshBasicMaterial({color:0xd90429}));
+    needle.position.set(0, 1.7, 0.19); scaleGroup.add(needle);
+    
+    // 3. Top Fulcrum Pivot
+    const pivotCap = new T.Mesh(new T.SphereGeometry(0.22, 24, 20), goldMat);
+    pivotCap.position.y = 2.72; scaleGroup.add(pivotCap);
+    
+    // 4. Tilting Crossbeam Group
+    const beamGroup = new T.Group();
+    beamGroup.position.set(0, 2.65, 0);
+    scaleGroup.add(beamGroup);
+    
+    const beam = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 4.4, 20), brassMat);
+    beam.rotation.z = Math.PI / 2; beam.castShadow = true; beamGroup.add(beam);
+    
+    // Beam End Hooks
+    [-2.1, 2.1].forEach(hx => {
+      const hook = new T.Mesh(new T.TorusGeometry(0.08, 0.025, 12, 20), goldMat);
+      hook.position.set(hx, -0.04, 0); beamGroup.add(hook);
+    });
+    
+    // 5. Left Weighing Pan (Benefits) - Hanging
+    const panGroupL = new T.Group();
+    panGroupL.position.set(-2.1, 0, 0);
+    beamGroup.add(panGroupL);
+    
+    // 3 golden suspension cords
+    const cordMat = new T.MeshStandardMaterial({color:0xe5c07b, metalness:0.8, roughness:0.3});
+    for(let i=0; i<3; i++){
+      const ang = (i * Math.PI * 2) / 3;
+      const px = Math.cos(ang) * 0.75, pz = Math.sin(ang) * 0.75;
+      const curve = new T.LineCurve3(new T.Vector3(0, -0.05, 0), new T.Vector3(px, -1.2, pz));
+      const cord = new T.Mesh(new T.TubeGeometry(curve, 10, 0.014, 6, false), cordMat);
+      panGroupL.add(cord);
+    }
+    
+    const dishL = new T.Mesh(new T.CylinderGeometry(0.85, 0.65, 0.14, 24), brassMat);
+    dishL.position.y = -1.22; dishL.castShadow = true; dishL.receiveShadow = true;
+    panGroupL.add(dishL);
+    
+    // Left Pan items: Books, puzzle piece, glowing star
+    const bookL = box(0.45, 0.12, 0.35, 0x2563eb); bookL.position.set(-0.15, -1.1, 0.1); panGroupL.add(bookL);
+    const puzzleL = box(0.32, 0.14, 0.32, 0x16a34a); puzzleL.position.set(0.2, -1.1, -0.1); panGroupL.add(puzzleL);
+    const starL = sph(0.18, 0xffd700, {emissive:0xffd700, emissiveIntensity:0.6}); starL.position.set(0, -0.9, 0); panGroupL.add(starL);
+    
+    // 6. Right Weighing Pan (Risks) - Hanging
+    const panGroupR = new T.Group();
+    panGroupR.position.set(2.1, 0, 0);
+    beamGroup.add(panGroupR);
+    
+    for(let i=0; i<3; i++){
+      const ang = (i * Math.PI * 2) / 3;
+      const px = Math.cos(ang) * 0.75, pz = Math.sin(ang) * 0.75;
+      const curve = new T.LineCurve3(new T.Vector3(0, -0.05, 0), new T.Vector3(px, -1.2, pz));
+      const cord = new T.Mesh(new T.TubeGeometry(curve, 10, 0.014, 6, false), cordMat);
+      panGroupR.add(cord);
+    }
+    
+    const dishR = new T.Mesh(new T.CylinderGeometry(0.85, 0.65, 0.14, 24), brassMat);
+    dishR.position.y = -1.22; dishR.castShadow = true; dishR.receiveShadow = true;
+    panGroupR.add(dishR);
+    
+    // Right Pan items: Red weights / alert markers
+    const weight1 = cyl(0.22, 0.28, 0.28, 0xd97706, 16); weight1.position.set(-0.18, -1.02, 0.08); panGroupR.add(weight1);
+    const weight2 = cyl(0.18, 0.22, 0.22, 0xdc2626, 16); weight2.position.set(0.2, -1.05, -0.1); panGroupR.add(weight2);
+    
+    const lblL = makeLabel('🌟 SMART BALANCE', {scale:0.42, fs:32, bg:'#16a34a', fg:'#fff'});
+    lblL.position.set(-2.1, 3.2, -1.5); root.add(lblL);
+    
+    const lblR = makeLabel('⚠️ OVERUSE STRAIN', {scale:0.42, fs:32, bg:'#dc2626', fg:'#fff'});
+    lblR.position.set(2.1, 3.2, -1.5); root.add(lblR);
     
     const {b, g} = bringKids(root, -2.4, 1.4, 2.4, 1.4, 0.3);
     camera.position.set(0, 3.2, 5.8); Cam.look.set(0, 1.6, -1);
@@ -1873,7 +1968,7 @@ registerChapter({
   build(root, api){
     addLights(root, 'warm'); ground(root, 0xe4ecff, 40);
     const desk = Props.desk(); desk.position.set(0, 0, -2.4); root.add(desk);
-    const laptop = Props.laptop(true); laptop.position.set(0, 1.0, -2.4); root.add(laptop);
+    const laptop = Props.laptop(true); laptop.scale.set(1.35, 1.35, 1.35); laptop.position.set(0, 0.98, -2.4); root.add(laptop);
     
     const {b, g} = bringKids(root, -1.6, 1.4, 1.6, 1.4, 0.3);
     camera.position.set(0, 3.2, 6.4); Cam.look.set(0, 1.4, -1);
