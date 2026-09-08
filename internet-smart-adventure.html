@@ -1877,7 +1877,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch3', title:'The Good Side of the Internet', logtag:'GOOD SIDE',
-  bg1:'#5db5e8', bg2:'#dff4ff',
+  bg1:'#5db5e8', bg2:'#dcefff',
   endTitle:'Chapter 3 Complete!',
   learned:[
     'The internet gives us endless knowledge, books, science & history.',
@@ -1953,18 +1953,15 @@ registerChapter({
     function createMuseum(parent, x, z){
       const g = new T.Group(); g.position.set(x, 0, z);
       
-      // Building Open-Front Pavilion Architecture (Back wall, side walls, floor, grand roof)
       const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
       const backWall = box(2.6, 2.8, 0.15, 0x0284c7); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
       const leftWall = box(0.15, 2.8, 2.2, 0x0369a1); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
       const rightWall = box(0.15, 2.8, 2.2, 0x0369a1); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
       const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
       
-      // Classical entrance pediment
       const ped = new T.Mesh(new T.ConeGeometry(1.6, 0.7, 4), new T.MeshStandardMaterial({color:0x0284c7, roughness:0.4}));
       ped.rotation.y = Math.PI/4; ped.position.set(0, 3.4, 0); g.add(ped);
       
-      // Classical front columns (left and right edges, leaving center wide open)
       const colMat = new T.MeshStandardMaterial({color:0xffffff, roughness:0.4});
       [-1.15, 1.15].forEach(cx => {
         const pillar = new T.Mesh(new T.CylinderGeometry(0.08, 0.09, 2.7, 16), colMat);
@@ -1978,18 +1975,15 @@ registerChapter({
       
       const boneMat = new T.MeshStandardMaterial({color:0xfef3c7, roughness:0.5, metalness:0.1});
       
-      // Plinth base with velvet stanchion rope
       const plinth = box(1.7, 0.16, 0.9, 0x0f172a); plinth.position.set(0, 0.08, 0); dino.add(plinth);
       const plaque = box(0.4, 0.05, 0.02, 0xf59e0b); plaque.position.set(0, 0.1, 0.46); dino.add(plaque);
 
-      // Dinosaur Skull & Sharp Teeth Jaw
       const skull = box(0.32, 0.22, 0.42, 0xfef3c7); skull.position.set(-0.6, 1.18, 0.0); dino.add(skull);
       const snout = box(0.24, 0.15, 0.32, 0xfde68a); snout.position.set(-0.84, 1.13, 0.0); dino.add(snout);
       const lowerJaw = box(0.22, 0.07, 0.28, 0xfef3c7); lowerJaw.position.set(-0.78, 0.99, 0.0); dino.add(lowerJaw);
       const eyeL = sph(0.05, 0x0f172a); eyeL.position.set(-0.62, 1.22, 0.16); dino.add(eyeL);
       const eyeR = sph(0.05, 0x0f172a); eyeR.position.set(-0.62, 1.22, -0.16); dino.add(eyeR);
       
-      // Spine / Vertebrae (chain of curved bone segments)
       for(let v = 0; v < 7; v++){
         const vx = -0.4 + v * 0.15;
         const vy = 1.12 - Math.sin((v/6)*Math.PI) * 0.14;
@@ -1999,7 +1993,6 @@ registerChapter({
         spineDorsal.position.set(vx, vy + 0.09, 0); dino.add(spineDorsal);
       }
 
-      // Rib Cage (3D curved bone ribs)
       for(let r = 0; r < 4; r++){
         const rx = -0.25 + r * 0.14;
         [-1, 1].forEach(side => {
@@ -2011,7 +2004,6 @@ registerChapter({
         });
       }
 
-      // Hind Legs with joints and clawed feet
       [-0.13, 0.13].forEach(side => {
         const femur = cyl(0.038, 0.042, 0.42, 0xfef3c7, 8);
         femur.position.set(0.12, 0.78, side); femur.rotation.z = 0.22; dino.add(femur);
@@ -2021,13 +2013,11 @@ registerChapter({
         foot.position.set(0.15, 0.18, side); dino.add(foot);
       });
 
-      // Front small arms
       [-0.1, 0.1].forEach(side => {
         const arm = cyl(0.02, 0.02, 0.18, 0xfef3c7, 6);
         arm.position.set(-0.35, 0.88, side * 1.3); arm.rotation.z = -0.6; dino.add(arm);
       });
 
-      // Tail vertebrae extending back
       for(let t = 0; t < 6; t++){
         const tx = 0.65 + t * 0.13;
         const ty = 0.92 - t * 0.07;
@@ -2035,7 +2025,6 @@ registerChapter({
         tvert.position.set(tx, ty, 0); dino.add(tvert);
       }
 
-      // Overhead museum spotlight illuminating dinosaur
       const spot = sph(0.1, 0xffedd5, {emissive:0xffedd5, emissiveIntensity:1.0});
       spot.position.set(0, 2.5, 0.3); dino.add(spot);
 
@@ -2056,7 +2045,6 @@ registerChapter({
       const rightWall = box(0.15, 2.8, 2.2, 0x1d4ed8); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
       const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
 
-      // Bookcase shelving on back & side walls
       const shelfMat = new T.MeshStandardMaterial({color:0x5c2c16, roughness:0.7});
       const bookColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899, 0x06b6d4, 0x14b8a6, 0xf97316];
       
@@ -2065,7 +2053,6 @@ registerChapter({
         const plank = new T.Mesh(new T.BoxGeometry(2.2, 0.04, 0.28), shelfMat);
         plank.position.set(0, sy, -0.85); g.add(plank);
         
-        // Rows of 3D Books with colorful bindings
         for(let b = 0; b < 12; b++){
           const bh = 0.32 + (b % 3) * 0.08, bw = 0.14;
           const bMesh = new T.Mesh(new T.BoxGeometry(bw, bh, 0.2), new T.MeshStandardMaterial({
@@ -2076,7 +2063,6 @@ registerChapter({
         }
       }
 
-      // Study Desk with Glowing Open Manuscript & Desk Lamp
       const desk = box(1.3, 0.06, 0.7, 0x854d0e); desk.position.set(0, 0.75, 0.25); g.add(desk);
       const leg1 = box(0.06, 0.7, 0.06, 0x713f12); leg1.position.set(-0.55, 0.37, 0.05); g.add(leg1);
       const leg2 = box(0.06, 0.7, 0.06, 0x713f12); leg2.position.set(0.55, 0.37, 0.45); g.add(leg2);
@@ -2084,13 +2070,11 @@ registerChapter({
       const openBook = box(0.55, 0.04, 0.38, 0xfef9c3); openBook.position.set(0, 0.8, 0.25); g.add(openBook);
       const bookLine = box(0.04, 0.05, 0.38, 0xd97706); bookLine.position.set(0, 0.81, 0.25); g.add(bookLine);
       
-      // Brass Desk Lamp with warm glow
       const lampBase = cyl(0.06, 0.08, 0.04, 0xd4af37, 12); lampBase.position.set(-0.45, 0.8, 0.15); g.add(lampBase);
       const lampStem = cyl(0.015, 0.015, 0.28, 0xd4af37, 8); lampStem.position.set(-0.45, 0.94, 0.15); g.add(lampStem);
       const lampShade = new T.Mesh(new T.ConeGeometry(0.1, 0.12, 12), new T.MeshStandardMaterial({color:0x16a34a}));
       lampShade.position.set(-0.4, 1.06, 0.15); lampShade.rotation.z = -0.5; g.add(lampShade);
 
-      // Desktop Globe
       const globeStand = cyl(0.05, 0.08, 0.1, 0xd4af37, 12); globeStand.position.set(0.45, 0.82, 0.15); g.add(globeStand);
       const globeBall = sph(0.14, 0x0284c7, {roughness:0.4}); globeBall.position.set(0.45, 0.98, 0.15); g.add(globeBall);
       onFrame((dt, t) => { globeBall.rotation.y = t * 1.2; });
@@ -2112,19 +2096,16 @@ registerChapter({
       const rightWall = box(0.15, 2.8, 2.2, 0xea580c); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
       const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
 
-      // Artist Easel & Canvas
       const easelL1 = box(0.05, 2.1, 0.05, 0x78350f); easelL1.position.set(-0.35, 1.1, -0.2); easelL1.rotation.z = -0.1; g.add(easelL1);
       const easelL2 = box(0.05, 2.1, 0.05, 0x78350f); easelL2.position.set(0.35, 1.1, -0.2); easelL2.rotation.z = 0.1; g.add(easelL2);
       const easelBack = box(0.05, 1.9, 0.05, 0x78350f); easelBack.position.set(0, 1.0, -0.55); easelBack.rotation.x = -0.2; g.add(easelBack);
       
       const canvas = box(1.15, 0.9, 0.04, 0xfffbeb); canvas.position.set(0, 1.55, -0.2); g.add(canvas);
       
-      // Painted artwork splash on canvas
       const art1 = sph(0.14, 0xec4899); art1.scale.set(1.5, 1.2, 0.2); art1.position.set(-0.25, 1.65, -0.17); g.add(art1);
       const art2 = sph(0.12, 0x3b82f6); art2.scale.set(1.3, 1.4, 0.2); art2.position.set(0.2, 1.45, -0.17); g.add(art2);
       const art3 = sph(0.1, 0xfacc15); art3.scale.set(1.2, 1.0, 0.2); art3.position.set(0.0, 1.8, -0.17); g.add(art3);
 
-      // Paint Palette with real paint dots on stool
       const stool = cyl(0.25, 0.25, 0.45, 0x78350f, 12); stool.position.set(-0.65, 0.35, 0.35); g.add(stool);
       const palette = cyl(0.25, 0.25, 0.03, 0xd4a373, 16); palette.position.set(-0.65, 0.6, 0.35); g.add(palette);
       [0xef4444, 0x3b82f6, 0x22c55e, 0xfacc15, 0xa855f7].forEach((c, idx) => {
@@ -2133,14 +2114,12 @@ registerChapter({
         g.add(dot);
       });
 
-      // Developer Computer Station on right
       const devDesk = box(0.7, 0.05, 0.5, 0x334155); devDesk.position.set(0.65, 0.65, 0.3); g.add(devDesk);
       const devLeg = box(0.04, 0.6, 0.04, 0x1e293b); devLeg.position.set(0.65, 0.32, 0.3); g.add(devLeg);
       const monitor = box(0.38, 0.26, 0.03, 0x0f172a); monitor.position.set(0.65, 0.88, 0.25); g.add(monitor);
       const monScr = new T.Mesh(new T.PlaneGeometry(0.34, 0.22), new T.MeshStandardMaterial({color:0x22c55e, emissive:0x15803d, emissiveIntensity:0.6}));
       monScr.position.set(0.65, 0.88, 0.27); g.add(monScr);
 
-      // Floating 3D Glowing Musical Notes
       const noteGroup = new T.Group();
       noteGroup.position.set(0.1, 2.3, 0.1);
       [[-0.2, 0.2, 0], [0.3, 0.4, -0.2], [0.0, 0.7, 0.1]].forEach(([nx, ny, nz]) => {
@@ -2171,7 +2150,6 @@ registerChapter({
       const rightWall = box(0.15, 2.8, 2.2, 0xca8a04); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
       const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
 
-      // Observatory Dome & Brass Telescope on top
       const dome = new T.Mesh(new T.SphereGeometry(1.0, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshStandardMaterial({color:0x1e293b, roughness:0.3}));
       dome.position.set(0, 3.0, 0); g.add(dome);
 
@@ -2179,14 +2157,12 @@ registerChapter({
       scope.rotation.x = -0.6; scope.rotation.y = 0.4;
       scope.position.set(0.15, 3.45, 0.25); g.add(scope);
 
-      // Large Glowing Cinema Projection Screen inside
       const scr = box(2.0, 1.2, 0.04, 0x0f172a); scr.position.set(0, 1.8, -0.9); g.add(scr);
       const display = new T.Mesh(new T.PlaneGeometry(1.9, 1.1), new T.MeshStandardMaterial({
         color:0x3b82f6, emissive:0x1d4ed8, emissiveIntensity:0.7
       }));
       display.position.set(0, 1.8, -0.87); g.add(display);
 
-      // Tiered Red Velvet Cinema Seats
       const seatMat = new T.MeshStandardMaterial({color:0x991b1b, roughness:0.6});
       for(let r = 0; r < 2; r++){
         for(let c = -2; c <= 2; c++){
@@ -2214,9 +2190,7 @@ registerChapter({
       const rightWall = box(0.15, 2.8, 2.2, 0x059669); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
       const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
 
-      // Giant Rotating Holographic Globe inside pavilion
       const earth = sph(0.68, 0x2563eb, {roughness:0.3}); earth.position.set(0, 1.6, 0.1); g.add(earth);
-      // Continents
       [[-0.2, 0.2, 0.6], [0.15, -0.15, 0.62], [0.35, 0.3, 0.54], [-0.35, -0.2, 0.56], [0.0, 0.45, 0.48]].forEach(([cx, cy, cz]) => {
         const cont = sph(0.2, 0x22c55e); cont.scale.set(1.4, 0.8, 0.3); cont.position.set(cx, 1.6 + cy, 0.1 + cz); g.add(cont);
       });
@@ -2224,11 +2198,9 @@ registerChapter({
         earth.rotation.y = t * 0.8;
       });
 
-      // Rooftop Satellite Communication Dish
       const dish = cyl(0.35, 0.06, 0.08, 0xe2e8f0, 16); dish.rotation.x = -0.5; dish.position.set(0.6, 3.3, -0.2); g.add(dish);
       const dishPole = box(0.04, 0.5, 0.04, 0x64748b); dishPole.position.set(0.6, 3.0, -0.2); g.add(dishPole);
 
-      // Glowing Wi-Fi Rings
       for(let w = 0; w < 3; w++){
         const ring = new T.Mesh(new T.TorusGeometry(0.2 + w * 0.12, 0.02, 8, 24, Math.PI),
           new T.MeshStandardMaterial({color:0x38bdf8, emissive:0x38bdf8, emissiveIntensity:0.6, transparent:true, opacity:0.8 - w * 0.2}));
@@ -2294,76 +2266,228 @@ registerChapter({
 
     let visitedSet = new Set();
 
+    // Central function to open any building card modal with full navigation & close button
+    function openBuildingModal(idx){
+      const bInfo = buildingsInfo[idx];
+      visitedSet.add(idx);
+      SFX.pop();
+      if(SFX.swoosh) SFX.swoosh();
+
+      // Smoothly fly camera to close-up interior view of this building
+      flyCam(bInfo.grp.position.x, 2.3, bInfo.grp.position.z + 3.8, bInfo.grp.position.x, 1.6, bInfo.grp.position.z, 0.85);
+
+      clearUI();
+      const card = el('div', 'building-modal');
+      card.style.cssText = `
+        position: fixed;
+        top: 38%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(18px);
+        border: 3.5px solid ${bInfo.color};
+        border-radius: 26px;
+        padding: 26px 32px 22px;
+        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.35);
+        z-index: 95;
+        max-width: 620px;
+        width: 92%;
+        text-align: center;
+        animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+      `;
+
+      const hasPrev = idx > 0;
+      const hasNext = idx < buildingsInfo.length - 1;
+      const allExplored = visitedSet.size >= 4;
+
+      card.innerHTML = `
+        <!-- Close Button (✕) -->
+        <button id="btnModalClose" style="
+          position: absolute;
+          top: 14px;
+          right: 16px;
+          background: #f1f5f9;
+          border: 2px solid #cbd5e1;
+          color: #475569;
+          font-size: 18px;
+          font-weight: 900;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        " title="Close Card and return to Plaza">✕</button>
+
+        <div style="display:inline-block;padding:5px 14px;background:${bInfo.color}18;color:${bInfo.color};border-radius:20px;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">
+          ${bInfo.tag}
+        </div>
+        <h3 style="margin:0 0 10px;color:#0f172a;font-size:22px;font-weight:900">${bInfo.name}</h3>
+        <p style="font-size:14.5px;line-height:1.65;color:#334155;margin:0 0 16px;text-align:left;">
+          ${bInfo.desc}
+        </p>
+
+        <!-- Main Action Button -->
+        <div id="modalActionArea" style="margin-bottom:16px;">
+          <button id="btnBldAction" class="btn" style="background:${bInfo.color};color:#fff;padding:12px 24px;font-size:14.5px;font-weight:800;border-radius:14px;border:none;cursor:pointer;box-shadow:0 6px 18px ${bInfo.color}44;">
+            ${bInfo.actionText} ✨
+          </button>
+        </div>
+
+        <!-- Navigation Bar (Previous, Next Building, Finish / Next Chapter) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:14px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
+          <div>
+            ${hasPrev ? `<button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Previous Hub</button>` : `<span style="width:10px;"></span>`}
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#64748b;">
+            Hub ${idx + 1} of ${buildingsInfo.length} (${visitedSet.size} explored)
+          </div>
+          <div>
+            ${hasNext ? `<button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>` : `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`}
+          </div>
+        </div>
+      `;
+
+      // 1. Close Button handler
+      const btnClose = card.querySelector('#btnModalClose');
+      btnClose.onmouseenter = () => { btnClose.style.background = '#e2e8f0'; btnClose.style.transform = 'scale(1.08)'; };
+      btnClose.onmouseleave = () => { btnClose.style.background = '#f1f5f9'; btnClose.style.transform = 'scale(1)'; };
+      btnClose.onclick = () => {
+        SFX.click();
+        clearUI();
+        flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.8);
+        renderPlazaQuickNav();
+        if(visitedSet.size >= 4){
+          api.prompt("🎉 You explored the superpower hubs! Tap 'Next Chapter' or click any building again.");
+        } else {
+          api.prompt(`🏙️ (${visitedSet.size}/${buildingsInfo.length} explored) Tap any building to step inside!`);
+        }
+      };
+
+      // 2. Main Action Button handler
+      const btnAct = card.querySelector('#btnBldAction');
+      btnAct.onclick = () => {
+        SFX.coin();
+        addXP(30);
+        toast(bInfo.actionMsg);
+        card.querySelector('#modalActionArea').innerHTML = `
+          <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
+            ✅ ${bInfo.actionMsg}
+          </div>
+        `;
+        if(visitedSet.size >= 4 && !hasNext){
+          const nextBtnArea = card.querySelector('#btnNextBld');
+          if(nextBtnArea) nextBtnArea.outerHTML = `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`;
+        }
+      };
+
+      // 3. Previous Button handler
+      const btnPrev = card.querySelector('#btnPrevBld');
+      if(btnPrev){
+        btnPrev.onclick = () => {
+          SFX.click();
+          openBuildingModal(idx - 1);
+        };
+      }
+
+      // 4. Next Building Button handler
+      const btnNext = card.querySelector('#btnNextBld');
+      if(btnNext){
+        btnNext.onclick = () => {
+          SFX.click();
+          openBuildingModal(idx + 1);
+        };
+      }
+
+      // 5. Finish / Next Chapter Button handler
+      const btnFinish = card.querySelector('#btnFinishCh3');
+      if(btnFinish){
+        btnFinish.onclick = () => {
+          SFX.chapter();
+          clearUI();
+          addXP(100);
+          api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
+        };
+      }
+
+      addUI(card);
+    }
+
+    // Plaza HUD Quick Navigation Pills (Always available when card is closed)
+    function renderPlazaQuickNav(){
+      clearUI();
+      const navContainer = el('div', 'plaza-quick-nav');
+      navContainer.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(14px);
+        border: 2px solid #cbd5e1;
+        border-radius: 30px;
+        padding: 8px 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 85;
+        max-width: 96%;
+        overflow-x: auto;
+      `;
+
+      buildingsInfo.forEach((bInfo, bIdx) => {
+        const isExplored = visitedSet.has(bIdx);
+        const pill = el('button', 'pill-btn', `${bInfo.name.split(' ')[0]} ${bInfo.name.split(' ')[1] || ''} ${isExplored ? '✅' : ''}`);
+        pill.style.cssText = `
+          background: ${isExplored ? bInfo.color : '#f1f5f9'};
+          color: ${isExplored ? '#ffffff' : '#334155'};
+          border: 1.5px solid ${bInfo.color};
+          padding: 6px 14px;
+          border-radius: 18px;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s;
+        `;
+        pill.onclick = () => openBuildingModal(bIdx);
+        navContainer.appendChild(pill);
+      });
+
+      if(visitedSet.size >= 3){
+        const nextChapPill = el('button', 'pill-btn', 'Next Chapter 🚀');
+        nextChapPill.style.cssText = `
+          background: #10b981;
+          color: #fff;
+          border: none;
+          padding: 7px 18px;
+          border-radius: 18px;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+          box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+        `;
+        nextChapPill.onclick = () => {
+          SFX.chapter();
+          clearUI();
+          addXP(100);
+          api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
+        };
+        navContainer.appendChild(nextChapPill);
+      }
+
+      addUI(navContainer);
+    }
+
+    // Connect 3D mesh clicks to openBuildingModal
     buildingsInfo.forEach((bInfo, idx) => {
       makeClickable(bInfo.grp, () => {
-        SFX.pop();
-        if(SFX.swoosh) SFX.swoosh();
-        visitedSet.add(idx);
-
-        // Smoothly fly camera to close-up interior view of this building
-        flyCam(bInfo.grp.position.x, 2.3, bInfo.grp.position.z + 3.8, bInfo.grp.position.x, 1.6, bInfo.grp.position.z, 0.9);
-
-        // Render rich interactive building modal in the center
-        clearUI();
-        const card = el('div', 'building-modal');
-        card.style.cssText = `
-          position: fixed;
-          top: 38%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(16px);
-          border: 3.5px solid ${bInfo.color};
-          border-radius: 26px;
-          padding: 24px 30px;
-          box-shadow: 0 25px 70px rgba(15, 23, 42, 0.35);
-          z-index: 95;
-          max-width: 620px;
-          width: 92%;
-          text-align: center;
-          animation: pop .35s cubic-bezier(.2,.9,.3,1.2);
-        `;
-
-        card.innerHTML = `
-          <div style="display:inline-block;padding:5px 14px;background:${bInfo.color}18;color:${bInfo.color};border-radius:20px;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">
-            ${bInfo.tag}
-          </div>
-          <h3 style="margin:0 0 10px;color:#0f172a;font-size:22px;font-weight:900">${bInfo.name}</h3>
-          <p style="font-size:14.5px;line-height:1.65;color:#334155;margin:0 0 18px;text-align:left;">
-            ${bInfo.desc}
-          </p>
-          <div id="modalActionArea" style="margin-bottom:16px;">
-            <button id="btnBldAction" class="btn" style="background:${bInfo.color};color:#fff;padding:12px 24px;font-size:14.5px;font-weight:800;border-radius:14px;border:none;cursor:pointer;box-shadow:0 6px 18px ${bInfo.color}44;">
-              ${bInfo.actionText} ✨
-            </button>
-          </div>
-          <div style="font-size:13px;font-weight:700;color:#64748b;margin-bottom:12px;">
-            Explored: ${visitedSet.size} of ${buildingsInfo.length} Superpower Hubs
-          </div>
-        `;
-
-        const btnAct = card.querySelector('#btnBldAction');
-        btnAct.onclick = () => {
-          SFX.coin();
-          addXP(30);
-          toast(bInfo.actionMsg);
-          card.querySelector('#modalActionArea').innerHTML = `
-            <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
-              ✅ ${bInfo.actionMsg}
-            </div>
-          `;
-          setTimeout(() => {
-            clearUI();
-            if(visitedSet.size >= 4){
-              addXP(100);
-              api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
-            } else {
-              api.prompt(`🏙️ (${visitedSet.size}/${buildingsInfo.length} explored) Tap another building to step inside!`);
-            }
-          }, 1400);
-        };
-
-        addUI(card);
+        openBuildingModal(idx);
       });
     });
 
@@ -2378,8 +2502,9 @@ registerChapter({
       {who:'boy', expr:'thinking', pose:'point', audio:'audio/boy_012.mp3', text:"Hmm. Let’s keep exploring and find out."}
     ];
 
-    runDialogue(dialogues, ()=>{
-      api.prompt("🏙️ Tap any building (Museum with Dinosaur, Library, Studio, Theater, Globe) to step inside!");
+    runDialogue(dialogues, () => {
+      api.prompt("🏙️ Tap any building (Museum, Library, Studio, Theater, Globe) or use the buttons below to explore!");
+      renderPlazaQuickNav();
     });
   }
 });
