@@ -722,11 +722,11 @@ function disposeScene(s){ s.traverse(o=>{ if(o.userData&&o.userData.persistent)r
 /* standard 3-point light rig; mood = 'warm' | 'cool' | 'alert' */
 function addLights(root, mood){
   // Lower ambient = richer, less washed-out colours with real shading & shadows
-  const amb = new T.AmbientLight(0xffffff, mood==='cool'? 0.42 : 0.5);
+  const amb = new T.AmbientLight(mood==='warm'? 0xfff6ea : 0xffffff, mood==='cool'? 0.42 : (mood==='warm'? 0.38 : 0.5));
   root.add(amb);
-  const hemi = new T.HemisphereLight(0xeaf4ff, 0x86b088, 0.38);
+  const hemi = new T.HemisphereLight(0xffeedd, 0x855328, mood==='warm'? 0.28 : 0.38);
   root.add(hemi);
-  const sun = new T.DirectionalLight(0xfff4e0, mood==='cool'? 1.05 : 1.25);
+  const sun = new T.DirectionalLight(0xfffae8, mood==='cool'? 1.05 : (mood==='warm'? 0.90 : 1.25));
   sun.position.set(6, 14, 8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
@@ -1299,33 +1299,148 @@ function pointsPop(pts, good){
 }
 
 /* ---- Quiz modal helper for chapters (with built-in encouragement + retry) ---- */
+/* =====================================================================
+   CONSEQUENCE SIMULATION SYSTEM & SMART QUIZ MODAL
+   ===================================================================== */
+function showConsequenceModal(opts){
+  clearUI();
+  const card = el('div', 'consequence-card');
+  card.style.cssText = `
+    position: fixed; top: 46%; left: 50%; transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 3.5px solid #ef4444; border-radius: 26px; padding: 26px 30px;
+    box-shadow: 0 25px 70px rgba(220, 38, 38, 0.45), 0 0 0 1000px rgba(15, 23, 42, 0.7);
+    z-index: 100; max-width: 620px; width: 92%; text-align: center;
+    color: #fff; animation: pop .35s cubic-bezier(.2,.9,.3,1.2);
+  `;
+
+  const banner = `
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(239,68,68,0.2);border:1.5px solid #ef4444;color:#fca5a5;padding:6px 18px;border-radius:999px;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">
+      <span>🚨</span> SIMULATED DIGITAL RISK CONSEQUENCE
+    </div>
+  `;
+
+  const icon = `<div style="font-size:48px;margin:4px 0 10px;animation:pulse 1.5s infinite;">${opts.icon || '⚠️'}</div>`;
+  const title = `<h3 style="margin:0 0 10px;color:#f87171;font-size:22px;font-weight:900;line-height:1.3">${opts.title || 'Digital Safety Hazard Detected!'}</h3>`;
+  const consequence = `
+    <div style="background:rgba(239,68,68,0.12);border-left:4px solid #ef4444;padding:12px 16px;border-radius:12px;margin:12px 0;text-align:left;font-size:15px;line-height:1.5;color:#fee2e2;">
+      <b>What Just Happened:</b> ${opts.consequence || 'Your personal privacy or device security was compromised.'}
+    </div>
+  `;
+
+  const lesson = `
+    <div style="background:rgba(56,189,248,0.12);border-left:4px solid #38bdf8;padding:12px 16px;border-radius:12px;margin:12px 0;text-align:left;font-size:14.5px;line-height:1.5;color:#e0f2fe;">
+      <b>🛡️ Digital Smartness Lesson:</b> ${opts.lesson || 'Always stop, think, and verify before sharing data or clicking unknown links.'}
+    </div>
+  `;
+
+  const retryBtn = el('button', 'btn primary', '🔄 Choose The Safe Action');
+  retryBtn.style.cssText = `
+    margin-top: 14px; padding: 14px 28px; font-size: 16px; font-weight: 800;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none; border-radius: 16px; color: #fff; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4); transition: transform 0.15s;
+  `;
+  retryBtn.onclick = () => {
+    try { SFX.click(); } catch(e){}
+    if(opts.onRetry) opts.onRetry();
+  };
+
+  card.innerHTML = banner + icon + title + consequence + lesson;
+  card.appendChild(retryBtn);
+  addUI(card);
+}
+
+/* Helper to strip spoiler emojis from option strings */
+function cleanOptionText(txt){
+  if(typeof txt !== 'string') return txt;
+  return txt.replace(/^[\s​]*[❌✅✓✗⚠️💡⭐👉\-\–\—]+\s*/, '').trim();
+}
+
+/* Redesigned Quiz Modal with Zero Spoilers & Realistic Consequence Engine */
 function showQuizModal(q){
   clearUI();
-  const render=()=>{
+  const render = () => {
     clearUI();
     const card = el('div', 'quiz-card');
-    card.style.cssText = 'position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.98);backdrop-filter:blur(14px);border:3.5px solid var(--blue);border-radius:24px;padding:24px 28px;box-shadow:0 20px 60px rgba(15,23,42,0.35);z-index:90;max-width:600px;width:92%;text-align:center;animation:pop .3s cubic-bezier(.2,.9,.3,1.2);';
-    const qTitle = el('div', '', `<h3 style="margin:0 0 14px;color:var(--blue-d);font-size:17px;font-weight:800;line-height:1.4">${q.question}</h3>`);
+    card.style.cssText = 'position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.98);backdrop-filter:blur(16px);border:3.5px solid var(--blue);border-radius:24px;padding:24px 28px;box-shadow:0 22px 65px rgba(15,23,42,0.38);z-index:90;max-width:620px;width:92%;text-align:center;animation:pop .3s cubic-bezier(.2,.9,.3,1.2);';
+    
+    // Clean question title
+    const cleanQ = (q.question || '').replace(/\[Question \d+ of \d+\]\s*/i, '');
+    const qTitle = el('div', '', `
+      <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--blue);text-transform:uppercase;margin-bottom:6px;">Digital Choice Scenario</div>
+      <h3 style="margin:0 0 18px;color:var(--blue-d);font-size:18px;font-weight:800;line-height:1.45">${cleanQ}</h3>
+    `);
     card.appendChild(qTitle);
+    
     const btnWrap = el('div', '');
-    btnWrap.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;';
-    q.options.forEach((opt, optIdx) => {
+    btnWrap.style.cssText = 'display:flex;gap:14px;justify-content:center;flex-wrap:wrap;';
+    
+    const cleanOptions = (q.options || []).map(cleanOptionText);
+    
+    cleanOptions.forEach((opt, optIdx) => {
       const btn = el('button', 'btn primary', opt);
-      btn.style.cssText = 'padding:14px 22px;font-size:15.5px;font-weight:700;border-radius:16px;cursor:pointer;flex:1;min-width:180px;box-shadow:0 6px 18px rgba(47,124,224,.35);line-height:1.4;transition:all .15s;';
+      btn.style.cssText = 'padding:14px 22px;font-size:15px;font-weight:700;border-radius:16px;cursor:pointer;flex:1;min-width:200px;box-shadow:0 6px 18px rgba(47,124,224,.32);line-height:1.4;transition:all .15s;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:#fff;border:none;';
+      
+      btn.onmouseenter = () => { btn.style.transform = 'translateY(-2px)'; };
+      btn.onmouseleave = () => { btn.style.transform = 'translateY(0)'; };
+      
       btn.onclick = () => {
         const isCorrect = (optIdx === q.answer);
-        clearUI();
         if(isCorrect){
-          const msg = (q.correctMsg) || (q.explain&&q.explain[optIdx]) || "That's the smart, safe choice — great job!";
-          encourage(true, msg, {points:q.points||10});
+          clearUI();
+          try { SFX.correct(); } catch(e){}
+          const msg = (q.correctMsg) || (q.afterMsg) || "Smart choice! You protected your digital safety.";
+          encourage(true, msg, {points: q.xp || q.points || 25});
           setTimeout(()=>{ if(q.onChoice) q.onChoice(true); }, 1400);
         } else {
-          // gentle tip, then let them try again — real encouragement to learn
-          const tip = (q.wrongMsg) || (q.explain&&q.explain[optIdx]) || "Have another look — pick the choice that keeps you safe and learning.";
-          if(q.onWrong) q.onWrong();
-          encourage(false, tip, {points:0});
-          if(q.retry===false){ setTimeout(()=>{ if(q.onChoice) q.onChoice(false); }, 1600); }
-          else { setTimeout(render, 1700); }   // re-show the question to retry
+          try { SFX.wrong(); } catch(e){}
+          // Determine custom consequence based on option text / question context
+          let consequenceTitle = 'Privacy & Security Risk!';
+          let consequenceIcon = '⚠️';
+          let consequenceText = 'By selecting this option, private personal data or account access was exposed to potential threats.';
+          let lessonText = 'Stop and evaluate the risk. Never share credentials, private locations, or click unverified links.';
+
+          const textLower = opt.toLowerCase() + ' ' + (q.question||'').toLowerCase();
+          if(textLower.includes('password') || textLower.includes('123') || textLower.includes('login')){
+            consequenceTitle = 'Account Compromised!';
+            consequenceIcon = '🔓';
+            consequenceText = 'A weak or shared password allowed unauthorized bots to access the account and change security settings!';
+            lessonText = 'Use long, complex passwords with numbers & symbols. Never share passwords with friends or online contacts.';
+          } else if(textLower.includes('phone') || textLower.includes('address') || textLower.includes('name') || textLower.includes('school') || textLower.includes('photo') || textLower.includes('selfie')){
+            consequenceTitle = 'Personal Identity Leaked!';
+            consequenceIcon = '📱';
+            consequenceText = 'Private personal data (name, school, home address) was broadcast to strangers. Spam calls and unwanted contacts started arriving!';
+            lessonText = 'Personal information is strictly confidential. Only share avatars, hobby tags, and keep your real address private.';
+          } else if(textLower.includes('win') || textLower.includes('prize') || textLower.includes('iphone') || textLower.includes('scam') || textLower.includes('cheat') || textLower.includes('coin')){
+            consequenceTitle = 'Device Locked by Malware!';
+            consequenceIcon = '🔒';
+            consequenceText = 'Clicking the fake prize link installed hidden adware! The browser locked up with 20 pop-ups demanding fake fees.';
+            lessonText = 'You cannot win contests you never joined. Free game currency generators and prize links are phishing traps.';
+          } else if(textLower.includes('meet') || textLower.includes('park') || textLower.includes('alone') || textLower.includes('secret')){
+            consequenceTitle = 'Critical Danger: Stranger Hazard!';
+            consequenceIcon = '🚨';
+            consequenceText = 'Agreeing to meet an unknown online contact or keeping online secrets puts your real-world personal safety at extreme risk!';
+            lessonText = 'NEVER meet online contacts in person without parent supervision. Always report secret requests immediately to trusted adults.';
+          } else if(textLower.includes('screen') || textLower.includes('hour') || textLower.includes('night') || textLower.includes('sleep')){
+            consequenceTitle = 'Digital Overload & Fatigue!';
+            consequenceIcon = '😴';
+            consequenceText = 'Screen overdose caused severe eye fatigue, headaches, and disrupted sound sleep, leaving zero energy for school.';
+            lessonText = 'Follow the 20-20-20 rule and power off screens 1 hour before bedtime to keep your real-world energy charged.';
+          } else if(textLower.includes('rumor') || textLower.includes('viral') || textLower.includes('forward') || textLower.includes('fake')){
+            consequenceTitle = 'Viral Misinformation Spread!';
+            consequenceIcon = '📢';
+            consequenceText = 'Sharing unverified sensational claims caused unnecessary panic and confusion across classmate group chats!';
+            lessonText = 'Always check 2-3 authoritative sources (official school site, news broadcaster) before forwarding claims.';
+          }
+
+          showConsequenceModal({
+            title: consequenceTitle,
+            icon: consequenceIcon,
+            consequence: consequenceText,
+            lesson: lessonText,
+            onRetry: render
+          });
         }
       };
       btnWrap.appendChild(btn);
@@ -1336,8 +1451,7 @@ function showQuizModal(q){
   render();
 }
 
-
-/* ---- Sequential quiz chain: runs 3-6 questions sequentially with feedback & sound ---- */
+/* ---- Sequential quiz chain ---- */
 function quizChain(questions, onDone, api){
   let qi = 0;
   function nextQ(){
@@ -1614,54 +1728,632 @@ const Props={
     return g;
   },
 
-  /* ---- Classroom Environment ---- */
-  classroomEnv(root){
-    // Parquet Floor
-    const floor=box(14,0.2,12,0xd4a373); floor.position.y=-0.1; floor.receiveShadow=true; root.add(floor);
-    const skirtL=box(0.12,0.3,12,0x8b5a2b); skirtL.position.set(-7,0.1,0); root.add(skirtL);
-    const skirtR=box(0.12,0.3,12,0x8b5a2b); skirtR.position.set(7,0.1,0); root.add(skirtR);
-    const skirtB=box(14,0.3,0.12,0x8b5a2b); skirtB.position.set(0,0.1,-6); root.add(skirtB);
+/* ---- Hardwood Parquet Floor Texture ---- */
+  classroomFloorTexture(){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#9e5820'; ctx.fillRect(0,0,1024,1024);
     
-    // Walls
-    const backWall=box(14,6.2,0.2,0xf0f7ff); backWall.position.set(0,3.0,-6); root.add(backWall);
-    const leftWall=box(0.2,6.2,12,0xe8f2fe); leftWall.position.set(-7,3.0,0); root.add(leftWall);
-    const rightWall=box(0.2,6.2,12,0xe8f2fe); rightWall.position.set(7,3.0,0); root.add(rightWall);
+    const plankH = 64;
+    const plankW = 256;
+    const colors = ['#8f4b14', '#9e5820', '#ad662b', '#96521a', '#7e3e0d', '#a46025', '#b57033'];
     
-    // Center Blackboard
-    const board=Props.blackboard(6.6,3.4); board.position.set(0,3.2,-5.88); root.add(board);
-    
-    // Windows on left wall
-    [-2.5, 2.5].forEach(wz=>{
-      const wFrame=box(0.1,3.0,2.2,0xffffff); wFrame.position.set(-6.92,3.4,wz); root.add(wFrame);
-      const sky=box(0.05,2.8,2.0,0x90cdf4); sky.position.set(-6.95,3.4,wz); root.add(sky);
-      const paneH=box(0.12,0.08,2.0,0xffffff); paneH.position.set(-6.9,3.4,wz); root.add(paneH);
-      const paneV=box(0.12,2.8,0.08,0xffffff); paneV.position.set(-6.9,3.4,wz); root.add(paneV);
-    });
-    
-    // Bookshelf & Globe on right wall
-    const shelf=box(0.8,3.8,2.8,0x8b5a2b); shelf.position.set(6.4,1.9,-2.5); root.add(shelf);
-    const bookColors=[0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899];
-    for(let sh=0;sh<3;sh++){
-      const sy=0.8+sh*1.1;
-      for(let b=0;b<6;b++){
-        const bk=box(0.4,0.6+Math.random()*0.15,0.08,bookColors[b%bookColors.length]);
-        bk.position.set(6.4,sy,-3.4+b*0.22); root.add(bk);
+    for(let y=0; y<1024; y+=plankH){
+      const row = Math.floor(y/plankH);
+      const offsetX = (row % 2) * (plankW / 2);
+      for(let x=-plankW; x<1024+plankW; x+=plankW){
+        const seed = Math.sin(x*17.3 + y*31.7) * 10000;
+        const colIdx = Math.floor(Math.abs(seed)) % colors.length;
+        ctx.fillStyle = colors[colIdx];
+        ctx.fillRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
+        
+        ctx.strokeStyle = 'rgba(40,15,0,0.18)';
+        ctx.lineWidth = 1.4;
+        for(let g=0; g<3; g++){
+          const gy = y + 12 + g * 18;
+          ctx.beginPath();
+          ctx.moveTo(x + offsetX + 2, gy);
+          ctx.bezierCurveTo(x + offsetX + 80, gy + (Math.sin(x+g)*3), x + offsetX + 180, gy - (Math.cos(y+g)*3), x + offsetX + plankW - 2, gy);
+          ctx.stroke();
+        }
+        
+        ctx.strokeStyle = 'rgba(35,12,0,0.65)';
+        ctx.lineWidth = 2.4;
+        ctx.strokeRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
       }
     }
-    const globeStand=cyl(0.08,0.12,0.15,0xd97706,12); globeStand.position.set(6.4,3.9,-2.5); root.add(globeStand);
-    const globeSphere=sph(0.24,0x3b82f6); globeSphere.position.set(6.4,4.2,-2.5); root.add(globeSphere);
+    const tex=new T.CanvasTexture(cv);
+    tex.wrapS = T.RepeatWrapping; tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(4.0, 3.0); tex.anisotropy = 4;
+    return tex;
+  },
+
+  /* ---- Wainscoting / Wood Paneling Texture ---- */
+  wainscotTexture(){
+    const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#6b3612'; ctx.fillRect(0,0,512,512);
+    const slatW = 32;
+    for(let x=0; x<512; x+=slatW){
+      ctx.fillStyle = (Math.floor(x/slatW) % 2 === 0)? '#783e16' : '#63310f';
+      ctx.fillRect(x+1, 0, slatW-2, 512);
+      ctx.strokeStyle = 'rgba(25,8,0,0.65)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x+1, 0, slatW-2, 512);
+    }
+    const tex=new T.CanvasTexture(cv);
+    tex.wrapS = T.RepeatWrapping; tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(8, 1); tex.anisotropy = 4;
+    return tex;
+  },
+
+  /* ---- Cork Noticeboard Texture (High-Res 1024x1024) ---- */
+  corkTexture(type){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#c88e4d'; ctx.fillRect(0,0,1024,1024);
+    ctx.fillStyle='rgba(90,45,10,0.25)';
+    for(let i=0; i<1400; i++){
+      ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*5+1, Math.random()*5+1);
+    }
     
-    // Clock
-    const clockBody=cyl(0.45,0.45,0.06,0xffffff,24); clockBody.rotation.x=Math.PI/2; clockBody.position.set(0,5.2,-5.88); root.add(clockBody);
-    const clockRim=new T.Mesh(new T.TorusGeometry(0.45,0.04,8,24), mat(0x1e293b)); clockRim.position.set(0,5.2,-5.86); root.add(clockRim);
-    const handH=box(0.03,0.24,0.02,0x1e293b); handH.position.set(0.06,5.28,-5.84); handH.rotation.z=-0.6; root.add(handH);
-    const handM=box(0.02,0.32,0.02,0x1e293b); handM.position.set(-0.08,5.28,-5.84); handM.rotation.z=0.8; root.add(handM);
+    if(type === 'rules'){
+      ctx.fillStyle='#0f172a';
+      ctx.font='bold 52px "Fredoka", sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('💡 SMART DIGITAL HABITS', 512, 80);
+      
+      // Note 1: Passwords (Yellow)
+      ctx.fillStyle='#fef08a'; ctx.fillRect(48, 120, 430, 380);
+      ctx.strokeStyle='#ca8a04'; ctx.lineWidth=4; ctx.strokeRect(48, 120, 430, 380);
+      ctx.fillStyle='#eab308'; ctx.beginPath(); ctx.arc(263, 145, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#451a03'; ctx.font='bold 38px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('🔒 Passwords Safe', 76, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Keep passwords private', 76, 265);
+      ctx.fillText('• Never share with friends', 76, 315);
+      ctx.fillText('• Use numbers & symbols', 76, 365);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#b45309';
+      ctx.fillText('Shield your accounts! 🛡️', 76, 435);
+      
+      // Note 2: Screen Balance (Cyan)
+      ctx.fillStyle='#bae6fd'; ctx.fillRect(546, 120, 430, 380);
+      ctx.strokeStyle='#0284c7'; ctx.lineWidth=4; ctx.strokeRect(546, 120, 430, 380);
+      ctx.fillStyle='#0284c7'; ctx.beginPath(); ctx.arc(761, 145, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#0c4a6e'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('⏱️ Screen Balance', 574, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Follow 20-20-20 rule', 574, 265);
+      ctx.fillText('• Look 20ft away for 20s', 574, 315);
+      ctx.fillText('• Stretch, blink & hydrate', 574, 365);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#0284c7';
+      ctx.fillText('Rest your eyes! 💧✨', 574, 435);
+      
+      // Note 3: Kindness (Green)
+      ctx.fillStyle='#bbf7d0'; ctx.fillRect(48, 540, 430, 420);
+      ctx.strokeStyle='#16a34a'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 430, 420);
+      ctx.fillStyle='#16a34a'; ctx.beginPath(); ctx.arc(263, 565, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#052e16'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('🤝 Kindness Online', 76, 625);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Be polite & encouraging', 76, 685);
+      ctx.fillText('• Say helpful, kind words', 76, 735);
+      ctx.fillText('• Stand up to cyberbullies', 76, 785);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#15803d';
+      ctx.fillText('Make friends happy! 🌟', 76, 855);
+      
+      // Note 4: Create & Learn (Pink)
+      ctx.fillStyle='#fbcfe8'; ctx.fillRect(546, 540, 430, 420);
+      ctx.strokeStyle='#db2777'; ctx.lineWidth=4; ctx.strokeRect(546, 540, 430, 420);
+      ctx.fillStyle='#db2777'; ctx.beginPath(); ctx.arc(761, 565, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#500724'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('🎨 Create & Explore', 574, 625);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Code exciting games 💻', 574, 685);
+      ctx.fillText('• Paint digital artworks 🎨', 574, 735);
+      ctx.fillText('• Discover space science 🚀', 574, 785);
+      ctx.font='bold 34px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#9d174d';
+      ctx.fillText('⭐ Be a Creator! ⭐', 761, 865);
+    } else {
+      ctx.fillStyle='#0f172a';
+      ctx.font='bold 52px "Fredoka", sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('🌟 STAR EXPLORERS 🌟', 512, 80);
+      
+      // Golden Certificate
+      ctx.fillStyle='#ffffff'; ctx.fillRect(48, 120, 928, 380);
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=6; ctx.strokeRect(56, 128, 912, 364);
+      ctx.fillStyle='#b45309'; ctx.font='bold 42px sans-serif';
+      ctx.fillText('🏆 CLASS 6-A DIGITAL HONORS 🏆', 512, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#334155';
+      ctx.fillText('Awarded for 100% safe, curious & creative digital exploration!', 512, 265);
+      ctx.font='bold 46px sans-serif'; ctx.fillStyle='#ea580c';
+      ctx.fillText('⭐ Aarav • Meera • Explorer ⭐', 512, 345);
+      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#059669';
+      ctx.fillText('Certified Internet Smart Champion 🎓', 512, 415);
+      
+      // Schedule Card
+      ctx.fillStyle='#fef3c7'; ctx.fillRect(48, 540, 928, 420);
+      ctx.strokeStyle='#d97706'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 928, 420);
+      ctx.fillStyle='#78350f'; ctx.font='bold 40px sans-serif';
+      ctx.fillText('📅 DIGITAL LAB QUESTS', 512, 615);
+      ctx.font='bold 30px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Chapter 01: Welcome & Connecting to the Web', 90, 685);
+      ctx.fillText('• Chapter 02: How Data Packets Travel Globally', 90, 745);
+      ctx.fillText('• Chapter 03: Exploring Digital City Hubs', 90, 805);
+      ctx.fillText('• Chapter 04: Habits & The Internet Balance Scale', 90, 865);
+      ctx.font='38px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#d97706';
+      ctx.fillText('⭐  ⭐  ⭐  ⭐  ⭐', 512, 925);
+    }
+    const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
+  },
+
+  /* ---- Window Outdoor Courtyard Texture ---- */
+  outdoorSkyTexture(){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
     
-    // Lighting
-    const ceilingLight=new T.PointLight(0xfffaed, 1.2, 14); ceilingLight.position.set(0,5.0,0); root.add(ceilingLight);
-    const boardSpot=new T.SpotLight(0xffffff, 1.0, 10, Math.PI/4, 0.4);
-    boardSpot.position.set(0,5.2,-3.0); boardSpot.target.position.set(0,3.2,-5.88);
-    root.add(boardSpot); root.add(boardSpot.target);
+    const skyGrad=ctx.createLinearGradient(0,0,0,1024);
+    skyGrad.addColorStop(0,'#0284c7');
+    skyGrad.addColorStop(0.4,'#38bdf8');
+    skyGrad.addColorStop(0.7,'#7dd3fc');
+    skyGrad.addColorStop(1,'#bae6fd');
+    ctx.fillStyle=skyGrad; ctx.fillRect(0,0,1024,1024);
+    
+    const sunGrad=ctx.createRadialGradient(720, 220, 20, 720, 220, 180);
+    sunGrad.addColorStop(0, '#ffffff');
+    sunGrad.addColorStop(0.25, '#fef08a');
+    sunGrad.addColorStop(0.6, 'rgba(253, 224, 71, 0.4)');
+    sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.fillStyle=sunGrad; ctx.beginPath(); ctx.arc(720, 220, 180, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(720, 220, 70, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(720, 220, 45, 0, Math.PI*2); ctx.fill();
+    
+    const drawCloud = (baseX, baseY, s) => {
+      ctx.fillStyle='rgba(255,255,255,0.92)';
+      const puffs = [
+        [0, 0, 40*s], [30*s, -15*s, 48*s], [70*s, -20*s, 56*s], 
+        [110*s, -10*s, 48*s], [140*s, 0, 38*s], [60*s, 10*s, 45*s]
+      ];
+      puffs.forEach(([ox, oy, r]) => {
+        ctx.beginPath(); ctx.arc(baseX + ox, baseY + oy, r, 0, Math.PI*2); ctx.fill();
+      });
+    };
+    drawCloud(80, 220, 1.3);
+    drawCloud(420, 320, 1.0);
+    drawCloud(680, 140, 0.9);
+    
+    ctx.fillStyle='#93c5fd';
+    ctx.beginPath();
+    ctx.moveTo(0, 720);
+    ctx.quadraticCurveTo(250, 580, 500, 680);
+    ctx.quadraticCurveTo(750, 600, 1024, 690);
+    ctx.lineTo(1024, 1024); ctx.lineTo(0, 1024); ctx.fill();
+    
+    ctx.fillStyle='#22c55e'; ctx.fillRect(0, 720, 1024, 304);
+    
+    ctx.fillStyle='#78350f';
+    [[160, 700, 26, 120], [360, 660, 32, 160], [600, 710, 28, 110], [820, 650, 36, 170]].forEach(([tx,ty,tw,th])=>{
+      ctx.fillRect(tx - tw/2, ty, tw, th);
+    });
+    
+    const treeFoliage = [
+      [160, 600, 120, '#15803d', '#16a34a', '#22c55e'],
+      [360, 540, 150, '#14532d', '#15803d', '#16a34a'],
+      [600, 620, 130, '#166534', '#15803d', '#4ade80'],
+      [820, 520, 170, '#14532d', '#16a34a', '#22c55e'],
+      [980, 600, 120, '#15803d', '#22c55e', '#86efac']
+    ];
+    treeFoliage.forEach(([tx, ty, tr, c1, c2, c3]) => {
+      ctx.fillStyle=c1; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle=c2; ctx.beginPath(); ctx.arc(tx - tr*0.2, ty - tr*0.1, tr*0.75, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle=c3; ctx.beginPath(); ctx.arc(tx + tr*0.2, ty - tr*0.25, tr*0.5, 0, Math.PI*2); ctx.fill();
+    });
+    
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=3;
+    [[220,130],[260,115],[480,180],[510,165],[540,175]].forEach(([bx,by])=>{
+      ctx.beginPath();
+      ctx.arc(bx-10, by, 10, Math.PI*1.2, 0);
+      ctx.arc(bx+10, by, 10, Math.PI, Math.PI*1.8);
+      ctx.stroke();
+    });
+    
+    const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
+  },
+
+  /* ---- Full Rich Classroom Environment ---- */
+  classroomEnv(root){
+    const envGroup = new T.Group();
+    envGroup.name = 'classroomEnv';
+    
+    // 1. Hardwood Parquet Floor
+    const floorMat = new T.MeshStandardMaterial({
+      map: Props.classroomFloorTexture(),
+      roughness: 0.60,
+      metalness: 0.05
+    });
+    const floor = new T.Mesh(new T.BoxGeometry(22, 0.2, 18), floorMat);
+    floor.position.set(0, -0.1, 0);
+    floor.receiveShadow = true;
+    envGroup.add(floor);
+    
+    // Dark walnut perimeter skirting baseboards
+    const skirtMat = mat(0x2d1204, {roughness: 0.7});
+    const skirtL = new T.Mesh(new T.BoxGeometry(0.14, 0.32, 18), skirtMat); skirtL.position.set(-10.93, 0.16, 0); envGroup.add(skirtL);
+    const skirtR = new T.Mesh(new T.BoxGeometry(0.14, 0.32, 18), skirtMat); skirtR.position.set(10.93, 0.16, 0); envGroup.add(skirtR);
+    const skirtB = new T.Mesh(new T.BoxGeometry(22, 0.32, 0.14), skirtMat); skirtB.position.set(0, 0.16, -5.93); envGroup.add(skirtB);
+    
+    // 2. Classroom Walls
+    const upperWallMat = mat(0xf5e2be, {roughness: 0.85, metalness: 0.0});
+    const wainscotMat = new T.MeshStandardMaterial({
+      map: Props.wainscotTexture(),
+      roughness: 0.75,
+      metalness: 0.05
+    });
+    const moldingMat = mat(0x3e1c08, {roughness: 0.7});
+    const crownMat = mat(0xd4c2a4, {roughness: 0.85});
+    
+    // --- Back Wall ---
+    const backLower = new T.Mesh(new T.BoxGeometry(22, 1.6, 0.18), wainscotMat);
+    backLower.position.set(0, 0.8, -5.91);
+    envGroup.add(backLower);
+    
+    const backMolding = new T.Mesh(new T.BoxGeometry(22, 0.09, 0.08), moldingMat);
+    backMolding.position.set(0, 1.62, -5.87);
+    envGroup.add(backMolding);
+    
+    const backUpper = new T.Mesh(new T.BoxGeometry(22, 4.6, 0.18), upperWallMat);
+    backUpper.position.set(0, 3.9, -5.91);
+    envGroup.add(backUpper);
+    
+    const backCrown = new T.Mesh(new T.BoxGeometry(22, 0.16, 0.12), crownMat);
+    backCrown.position.set(0, 6.12, -5.86);
+    envGroup.add(backCrown);
+    
+    // --- Left Wall ---
+    const leftLower = new T.Mesh(new T.BoxGeometry(0.18, 1.6, 18), wainscotMat);
+    leftLower.position.set(-10.91, 0.8, 0);
+    envGroup.add(leftLower);
+    
+    const leftMolding = new T.Mesh(new T.BoxGeometry(0.08, 0.09, 18), moldingMat);
+    leftMolding.position.set(-10.87, 1.62, 0);
+    envGroup.add(leftMolding);
+    
+    const leftUpper = new T.Mesh(new T.BoxGeometry(0.18, 4.6, 18), upperWallMat);
+    leftUpper.position.set(-10.91, 3.9, 0);
+    envGroup.add(leftUpper);
+    
+    // --- Right Wall ---
+    const rightLower = new T.Mesh(new T.BoxGeometry(0.18, 1.6, 18), wainscotMat);
+    rightLower.position.set(10.91, 0.8, 0);
+    envGroup.add(rightLower);
+    
+    const rightMolding = new T.Mesh(new T.BoxGeometry(0.08, 0.09, 18), moldingMat);
+    rightMolding.position.set(10.87, 1.62, 0);
+    envGroup.add(rightMolding);
+    
+    const rightUpper = new T.Mesh(new T.BoxGeometry(0.18, 4.6, 18), upperWallMat);
+    rightUpper.position.set(10.91, 3.9, 0);
+    envGroup.add(rightUpper);
+    
+    // Ceiling
+    const ceiling = box(22, 0.2, 18, 0xf0e4d0);
+    ceiling.position.set(0, 6.25, 0);
+    envGroup.add(ceiling);
+    
+    // 3. Center Blackboard
+    const board = Props.blackboard(6.2, 2.9);
+    board.position.set(0, 2.82, -5.82);
+    envGroup.add(board);
+    
+    // Top Banner Plaque on Blackboard
+    const bannerFrame = box(4.4, 0.36, 0.08, 0x4a2a14);
+    bannerFrame.position.set(0, 4.42, -5.82);
+    envGroup.add(bannerFrame);
+    const bannerLabel = makeLabel('🏫 CLASSROOM 6-A  •  DIGITAL SMARTNESS LAB 🌟', {
+      scale: 0.34, fs: 28, bg: 'rgba(23,65,42,0.95)', fg: '#fffae0', border: '#f59e0b'
+    });
+    bannerLabel.position.set(0, 4.42, -5.76);
+    envGroup.add(bannerLabel);
+    
+    // 4. Classroom Analog Clock
+    const clockGroup = new T.Group();
+    clockGroup.position.set(0, 4.88, -5.82);
+    const clockBody = cyl(0.34, 0.34, 0.05, 0xffffff, 24);
+    clockBody.rotation.x = Math.PI / 2;
+    clockGroup.add(clockBody);
+    const clockRim = new T.Mesh(new T.TorusGeometry(0.34, 0.035, 10, 28), mat(0x273444));
+    clockGroup.add(clockRim);
+    for(let h=0; h<12; h++){
+      const ang = (h / 12) * Math.PI * 2;
+      const tick = box(h%3===0?0.032:0.016, 0.045, 0.01, 0x1e293b);
+      tick.position.set(Math.sin(ang)*0.26, Math.cos(ang)*0.26, 0.03);
+      tick.rotation.z = -ang;
+      clockGroup.add(tick);
+    }
+    const hourHand = box(0.026, 0.16, 0.02, 0x0f172a);
+    hourHand.position.set(0.04, 0.04, 0.035);
+    hourHand.rotation.z = -0.7;
+    clockGroup.add(hourHand);
+    const minHand = box(0.018, 0.22, 0.02, 0x0f172a);
+    minHand.position.set(-0.04, 0.05, 0.035);
+    minHand.rotation.z = 0.9;
+    clockGroup.add(minHand);
+    const secHand = box(0.01, 0.25, 0.02, 0xef4444);
+    secHand.position.set(0, 0.06, 0.04);
+    secHand.rotation.z = -0.3;
+    clockGroup.add(secHand);
+    const centerPin = cyl(0.022, 0.022, 0.03, 0xef4444, 12);
+    centerPin.rotation.x = Math.PI/2; centerPin.position.z = 0.045;
+    clockGroup.add(centerPin);
+    envGroup.add(clockGroup);
+    
+    // 5. Left Cork Bulletin Board
+    const corkMatL = new T.MeshStandardMaterial({map: Props.corkTexture('rules'), roughness: 0.85});
+    const corkFrameL = box(2.4, 2.3, 0.1, 0x5a381b);
+    corkFrameL.position.set(-4.65, 3.0, -5.82);
+    envGroup.add(corkFrameL);
+    const corkBoardL = new T.Mesh(new T.BoxGeometry(2.24, 2.14, 0.04), corkMatL);
+    corkBoardL.position.set(-4.65, 3.0, -5.76);
+    envGroup.add(corkBoardL);
+    
+    // 6. Right Cork Bulletin Board
+    const corkMatR = new T.MeshStandardMaterial({map: Props.corkTexture('honors'), roughness: 0.85});
+    const corkFrameR = box(2.4, 2.3, 0.1, 0x5a381b);
+    corkFrameR.position.set(4.65, 3.0, -5.82);
+    envGroup.add(corkFrameR);
+    const corkBoardR = new T.Mesh(new T.BoxGeometry(2.24, 2.14, 0.04), corkMatR);
+    corkBoardR.position.set(4.65, 3.0, -5.76);
+    envGroup.add(corkBoardR);
+    
+    // 7. Pennant Bunting Garland
+    const garlandColors = [0xff5964, 0xfec601, 0x35a7ff, 0x38b000, 0x9d4edd, 0xf77f00, 0x00f5d4];
+    for(let f=0; f<23; f++){
+      const fx = -7.7 + f * 0.7;
+      const sag = Math.sin((f / 22) * Math.PI) * 0.32;
+      const fy = 5.4 - sag;
+      const flag = new T.Mesh(
+        new T.ConeGeometry(0.22, 0.38, 3),
+        mat(garlandColors[f % garlandColors.length], {roughness: 0.6})
+      );
+      flag.rotation.x = Math.PI;
+      flag.position.set(fx, fy - 0.15, -5.78);
+      envGroup.add(flag);
+    }
+    const stringCurve = box(16.0, 0.02, 0.02, 0xd4d4d4);
+    stringCurve.position.set(0, 5.28, -5.78);
+    envGroup.add(stringCurve);
+    
+    // 8. Open Frame Bookshelf (Neat, perfectly aligned books & realistic shelf library)
+    const shelfGroup = new T.Group();
+    shelfGroup.position.set(7.0, 1.85, -4.5);
+    shelfGroup.rotation.y = -0.28;
+    
+    const woodMat = mat(0x4a2208, {roughness: 0.75});
+    const backPanel = new T.Mesh(new T.BoxGeometry(2.4, 3.5, 0.05), mat(0x321404));
+    backPanel.position.set(0, 0, -0.22);
+    shelfGroup.add(backPanel);
+    
+    const sideL = new T.Mesh(new T.BoxGeometry(0.08, 3.5, 0.48), woodMat);
+    sideL.position.set(-1.2, 0, 0); shelfGroup.add(sideL);
+    const sideR = new T.Mesh(new T.BoxGeometry(0.08, 3.5, 0.48), woodMat);
+    sideR.position.set(1.2, 0, 0); shelfGroup.add(sideR);
+    const topB = new T.Mesh(new T.BoxGeometry(2.5, 0.08, 0.5), woodMat);
+    topB.position.set(0, 1.75, 0); shelfGroup.add(topB);
+    const botB = new T.Mesh(new T.BoxGeometry(2.5, 0.08, 0.5), woodMat);
+    botB.position.set(0, -1.75, 0); shelfGroup.add(botB);
+    
+    // Middle shelf dividers
+    const shelf1 = new T.Mesh(new T.BoxGeometry(2.32, 0.06, 0.46), woodMat);
+    shelf1.position.set(0, -0.60, 0); shelfGroup.add(shelf1);
+    const shelf2 = new T.Mesh(new T.BoxGeometry(2.32, 0.06, 0.46), woodMat);
+    shelf2.position.set(0, 0.55, 0); shelfGroup.add(shelf2);
+    
+    // --- Tier 1 (Bottom Shelf, surface y = -1.71) ---
+    const tier1Books = [
+      {w:0.12, h:0.75, col:0x1e3a8a, label:'SCIENCE'},
+      {w:0.11, h:0.72, col:0x047857, label:'MATH'},
+      {w:0.14, h:0.78, col:0xb91c1c, label:'HISTORY'},
+      {w:0.10, h:0.70, col:0x7c2d12, label:'ART'},
+      {w:0.13, h:0.76, col:0x4338ca, label:'CODING'},
+      {w:0.11, h:0.74, col:0x0f766e, label:'SPACE'},
+      {w:0.14, h:0.77, col:0xa16207, label:'ATLAS'},
+      {w:0.12, h:0.73, col:0x6d28d9, label:'ROBOTS'},
+      {w:0.10, h:0.69, col:0xbe123c, label:'MUSIC'},
+      {w:0.13, h:0.75, col:0x1e293b, label:'WEB'}
+    ];
+    let curX1 = -1.02;
+    tier1Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.36, b.col);
+      bookMesh.position.set(curX1 + b.w/2, -1.71 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      // Gold/White spine band
+      const spine = box(b.w * 0.9, 0.06, 0.02, 0xfde047);
+      spine.position.set(curX1 + b.w/2, -1.71 + b.h * 0.65, 0.20);
+      shelfGroup.add(spine);
+      curX1 += b.w + 0.015;
+    });
+    // Bookend
+    const bookEnd1 = box(0.04, 0.45, 0.38, 0x334155);
+    bookEnd1.position.set(curX1 + 0.02, -1.71 + 0.225, 0.02);
+    shelfGroup.add(bookEnd1);
+
+    // --- Tier 2 (Middle Shelf, surface y = -0.57) ---
+    // Left side: Neat standing books
+    const tier2Books = [
+      {w:0.12, h:0.70, col:0x0284c7},
+      {w:0.11, h:0.68, col:0xd97706},
+      {w:0.13, h:0.74, col:0x16a34a},
+      {w:0.10, h:0.66, col:0x9333ea},
+      {w:0.12, h:0.72, col:0xe11d48},
+      {w:0.14, h:0.75, col:0x2563eb}
+    ];
+    let curX2 = -1.02;
+    tier2Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.34, b.col);
+      bookMesh.position.set(curX2 + b.w/2, -0.57 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      curX2 += b.w + 0.015;
+    });
+    const bookEnd2 = box(0.04, 0.40, 0.36, 0x334155);
+    bookEnd2.position.set(curX2 + 0.02, -0.57 + 0.20, 0.02);
+    shelfGroup.add(bookEnd2);
+
+    // Right side of middle shelf: Horizontally stacked books resting neatly
+    const stack1 = box(0.58, 0.12, 0.38, 0x15803d);
+    stack1.position.set(0.55, -0.57 + 0.06, 0.02);
+    shelfGroup.add(stack1);
+    const stack2 = box(0.54, 0.11, 0.36, 0xb91c1c);
+    stack2.position.set(0.55, -0.57 + 0.12 + 0.055, 0.02);
+    shelfGroup.add(stack2);
+    const stack3 = box(0.48, 0.10, 0.34, 0x1e40af);
+    stack3.position.set(0.55, -0.57 + 0.23 + 0.05, 0.02);
+    shelfGroup.add(stack3);
+
+    // --- Tier 3 (Top inside Shelf, surface y = 0.58) ---
+    const tier3Books = [
+      {w:0.11, h:0.68, col:0x7c3aed},
+      {w:0.13, h:0.72, col:0x059669},
+      {w:0.12, h:0.70, col:0xdc2626},
+      {w:0.10, h:0.65, col:0x0284c7},
+      {w:0.14, h:0.75, col:0xf59e0b},
+      {w:0.12, h:0.71, col:0x475569},
+      {w:0.11, h:0.69, col:0x10b981},
+      {w:0.13, h:0.73, col:0xdb2777},
+      {w:0.12, h:0.70, col:0x2563eb}
+    ];
+    let curX3 = -1.02;
+    tier3Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.34, b.col);
+      bookMesh.position.set(curX3 + b.w/2, 0.58 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      curX3 += b.w + 0.015;
+    });
+
+    // Top of bookcase props (surface y = 1.79)
+    const globeStand = cyl(0.05, 0.12, 0.16, 0xd97706, 12);
+    globeStand.position.set(-0.55, 1.87, 0);
+    shelfGroup.add(globeStand);
+    const globeSphere = sph(0.24, 0x2563eb, {roughness: 0.4});
+    globeSphere.position.set(-0.55, 2.15, 0);
+    shelfGroup.add(globeSphere);
+    
+    const trophyBase = box(0.22, 0.1, 0.22, 0x1e293b);
+    trophyBase.position.set(0.55, 1.84, 0);
+    shelfGroup.add(trophyBase);
+    const trophyCup = cyl(0.16, 0.07, 0.25, 0xf59e0b, 16, {metalness: 0.85, roughness: 0.2});
+    trophyCup.position.set(0.55, 2.07, 0);
+    shelfGroup.add(trophyCup);
+    const trophyStar = sph(0.06, 0xfbbf24, {metalness: 0.9, roughness: 0.1});
+    trophyStar.position.set(0.55, 2.27, 0);
+    shelfGroup.add(trophyStar);
+    
+    envGroup.add(shelfGroup);
+    
+    // 9. Left Side: Sunny School Window with visible outdoor view
+    const winGroup = new T.Group();
+    winGroup.position.set(-7.0, 2.8, -4.5);
+    winGroup.rotation.y = 0.28;
+    
+    const whiteFrameMat = mat(0xffffff, {roughness: 0.5});
+    const frameL = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    frameL.position.set(-1.23, 0, 0.02); winGroup.add(frameL);
+    const frameR = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    frameR.position.set(1.23, 0, 0.02); winGroup.add(frameR);
+    const frameT = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    frameT.position.set(0, 1.63, 0.02); winGroup.add(frameT);
+    const frameB = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    frameB.position.set(0, -1.63, 0.02); winGroup.add(frameB);
+    
+    const winSill = box(2.8, 0.14, 0.38, 0x4a2208);
+    winSill.position.set(0, -1.72, 0.12);
+    winGroup.add(winSill);
+    
+    const skyMat = new T.MeshBasicMaterial({
+      map: Props.outdoorSkyTexture()
+    });
+    const skyPane = new T.Mesh(new T.PlaneGeometry(2.4, 3.2), skyMat);
+    skyPane.position.set(0, 0, -0.01);
+    winGroup.add(skyPane);
+    
+    const mH1 = box(2.36, 0.06, 0.05, 0xffffff); mH1.position.set(0, -0.45, 0.03); winGroup.add(mH1);
+    const mH2 = box(2.36, 0.06, 0.05, 0xffffff); mH2.position.set(0, 0.65, 0.03); winGroup.add(mH2);
+    const mV = box(0.06, 3.2, 0.05, 0xffffff); mV.position.set(0, 0, 0.03); winGroup.add(mV);
+    
+    const potL = Props.plant();
+    potL.scale.set(1.3, 1.3, 1.3);
+    potL.position.set(-0.7, -1.62, 0.14);
+    winGroup.add(potL);
+    
+    const potL2 = Props.plant();
+    potL2.scale.set(1.1, 1.1, 1.1);
+    potL2.position.set(0.7, -1.62, 0.14);
+    winGroup.add(potL2);
+    
+    envGroup.add(winGroup);
+    
+    // 10. Background Student Desks & Chairs
+    const deskL = Props.desk();
+    deskL.position.set(-3.2, 0, -3.2);
+    envGroup.add(deskL);
+    const chairL2 = Props.chair(0x2563eb);
+    chairL2.position.set(-3.2, 0, -2.6);
+    chairL2.rotation.y = Math.PI;
+    envGroup.add(chairL2);
+    const backpackL = box(0.32, 0.42, 0.22, 0x1d4ed8);
+    backpackL.position.set(-3.2, 0.5, -2.3);
+    envGroup.add(backpackL);
+    
+    const deskR = Props.desk();
+    deskR.position.set(3.2, 0, -3.2);
+    envGroup.add(deskR);
+    const chairR2 = Props.chair(0xe11d48);
+    chairR2.position.set(3.2, 0, -2.6);
+    chairR2.rotation.y = Math.PI;
+    envGroup.add(chairR2);
+    const backpackR = box(0.32, 0.42, 0.22, 0xbe123c);
+    backpackR.position.set(3.2, 0.5, -2.3);
+    envGroup.add(backpackR);
+    
+    const notebook1 = box(0.34, 0.04, 0.26, 0x2563eb); notebook1.position.set(0.75, 1.02, -1.8); envGroup.add(notebook1);
+    const notebook2 = box(0.32, 0.04, 0.24, 0xdc2626); notebook2.position.set(0.75, 1.06, -1.8); envGroup.add(notebook2);
+    const ruler = box(0.35, 0.01, 0.04, 0xfacc15); ruler.position.set(0.75, 1.09, -1.6); envGroup.add(ruler);
+    
+    const penCup = cyl(0.07, 0.06, 0.14, 0x0891b2, 12); penCup.position.set(-0.75, 1.06, -1.8); envGroup.add(penCup);
+    const pen1 = cyl(0.008, 0.008, 0.18, 0xdc2626, 6); pen1.position.set(-0.74, 1.16, -1.8); pen1.rotation.z = 0.2; envGroup.add(pen1);
+    const pen2 = cyl(0.008, 0.008, 0.18, 0x2563eb, 6); pen2.position.set(-0.76, 1.16, -1.8); pen2.rotation.z = -0.15; envGroup.add(pen2);
+    const pen3 = cyl(0.008, 0.008, 0.18, 0x16a34a, 6); pen3.position.set(-0.75, 1.16, -1.78); pen3.rotation.x = 0.2; envGroup.add(pen3);
+    
+    // 11. Hanging Vintage School Pendant Lights
+    [[-2.4, -1.0], [2.4, -1.0]].forEach(([lx, lz]) => {
+      const cord = cyl(0.012, 0.012, 1.4, 0x334155, 6);
+      cord.position.set(lx, 5.5, lz);
+      envGroup.add(cord);
+      
+      const shade = new T.Mesh(
+        new T.ConeGeometry(0.38, 0.22, 18, 1, true),
+        mat(0x133e24, {roughness: 0.4, side: T.DoubleSide})
+      );
+      shade.position.set(lx, 4.8, lz);
+      envGroup.add(shade);
+      
+      const bulb = sph(0.08, 0xffedd5, {emissive: 0xffd166, emissiveIntensity: 1.0});
+      bulb.position.set(lx, 4.75, lz);
+      envGroup.add(bulb);
+    });
+    
+    // 12. Calibrated Warm Ambient Lighting
+    const ceilingWarmLight = new T.PointLight(0xffedd5, 0.45, 14);
+    ceilingWarmLight.position.set(0, 4.8, -1.0);
+    envGroup.add(ceilingWarmLight);
+    
+    const boardSpot = new T.SpotLight(0xfffaea, 0.45, 10, Math.PI/4, 0.5);
+    boardSpot.position.set(0, 4.8, -3.0);
+    boardSpot.target.position.set(0, 2.82, -5.82);
+    envGroup.add(boardSpot);
+    envGroup.add(boardSpot.target);
+    
+    root.add(envGroup);
   },
 
   tree(color){ const g=new T.Group(); const trunk=cyl(0.12,0.16,0.7,0x8a5a33,8); trunk.position.y=0.35; g.add(trunk);
@@ -1704,7 +2396,7 @@ const Props={
    ===================================================================== */
 registerChapter({
   id:'ch1', title:'Welcome to the Internet', logtag:'CHAPTER 01',
-  bg1:'#7cc0f5', bg2:'#e9f3ff',
+  bg1:'#fcd34d', bg2:'#fef3c7',
   endTitle:'Chapter 1 Complete!',
   learned:[
     'The internet is part of our daily life for learning and playing.',
@@ -3844,78 +4536,215 @@ registerChapter({
 /* =====================================================================
    CHAPTER 07: Privacy Locker (Safe vs Private Data)
    ===================================================================== */
+/* =====================================================================
+   CHAPTER 07: Privacy Locker (Interactive Password Strength & Vault Lab)
+   ===================================================================== */
 registerChapter({
   id:'ch7', title:'Privacy Locker', logtag:'PRIVACY',
-  bg1:'#8f9be6', bg2:'#ece9fb',
+  bg1:'#1e1b4b', bg2:'#312e81',
   endTitle:'Chapter 7 Complete!',
   learned:[
     'Private data: passwords, home address, phone number & school name.',
-    'Safe to share: favorite hobby, favorite color & cartoon characters.',
-    'Never share passwords — not even with best friends!'
+    'Safe to share: favorite hobby, game tag & cartoon avatars.',
+    'Strong passwords mix 10+ characters with uppercase, numbers & symbols!'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0xa9b6e0, 40);
+    addLights(root, 'warm'); ground(root, 0x1e293b, 40);
     
-    const safeBody = box(2.4, 2.6, 1.8, 0x2e3440); safeBody.position.set(0, 1.3, -2.5); root.add(safeBody);
-    const safeDoor = box(2.1, 2.3, 0.1, 0x3b4252); safeDoor.position.set(0, 1.3, -1.55); root.add(safeDoor);
-    const wheel = cyl(0.35, 0.35, 0.08, 0xffcf49, 16); wheel.rotation.x = Math.PI/2; wheel.position.set(0, 1.3, -1.48); root.add(wheel);
+    // 3D High-Tech Privacy Vault
+    const safeBody = box(3.2, 3.4, 2.2, 0x0f172a); safeBody.position.set(0, 1.7, -2.8); root.add(safeBody);
+    const safeRim = box(3.3, 3.5, 0.1, 0x3b82f6); safeRim.position.set(0, 1.7, -1.72); root.add(safeRim);
+    const safeDoor = box(2.8, 3.0, 0.14, 0x1e293b); safeDoor.position.set(0, 1.7, -1.65); root.add(safeDoor);
     
-    const lbl = makeLabel('🔒 PRIVACY VAULT', {scale:0.45, fs:36, bg:'#4a5568', fg:'#fff'});
-    lbl.position.set(0, 3.1, -2.5); root.add(lbl);
+    const wheel = cyl(0.42, 0.42, 0.12, 0xf59e0b, 20); wheel.rotation.x = Math.PI/2; wheel.position.set(0, 1.7, -1.55); root.add(wheel);
+    const lockDial = cyl(0.18, 0.18, 0.16, 0xef4444, 16); lockDial.rotation.x = Math.PI/2; lockDial.position.set(0, 1.7, -1.52); root.add(lockDial);
     
-    const {b, g} = bringKids(root, -2.0, 1.2, 2.0, 1.2, 0.3);
-    camera.position.set(0, 3.2, 6.0); Cam.look.set(0, 1.4, -1);
+    // Glowing Laser Security Columns
+    [[-2.4, -2.8], [2.4, -2.8]].forEach(([lx, lz]) => {
+      const col = cyl(0.15, 0.15, 4.0, 0x334155, 12); col.position.set(lx, 2.0, lz); root.add(col);
+      const ring = new T.Mesh(new T.TorusGeometry(0.3, 0.04, 8, 24), mat(0x06b6d4, {emissive:0x06b6d4, emissiveIntensity:0.8}));
+      ring.rotation.x = Math.PI/2; ring.position.set(lx, 3.2, lz); root.add(ring);
+    });
+    
+    const lbl = makeLabel('🔐 CYBER PASSWORD & PRIVACY VAULT', {scale:0.48, fs:36, bg:'#0f172a', fg:'#38bdf8', border:'#38bdf8'});
+    lbl.position.set(0, 3.8, -2.8); root.add(lbl);
+    
+    const {b, g} = bringKids(root, -2.2, 1.2, 2.2, 1.2, 0.3);
+    camera.position.set(0, 3.2, 6.2); Cam.look.set(0, 1.6, -1);
     
     const introDlg = [
-      {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_025.mp3', text:"Some information is personal. If a stranger gets it, it could be used to hurt us."},
-      {who:'boy', expr:'happy', pose:'think', audio:'audio/boy_026.mp3', text:"So we lock the private stuff away, and only share what’s safe. Let’s sort them!"}
+      {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_025.mp3', text:"Some information is strictly personal. If hackers or strangers get it, accounts get broken into."},
+      {who:'boy', expr:'happy', pose:'think', audio:'audio/boy_026.mp3', text:"Let’s forge an ultra-strong password and lock away the private secrets!"}
     ];
     
     runDialogue(introDlg, ()=>{
-      quizChain([
-        {
-          question: "Vault Lock 1: A website asks for your Full Name, Home Address, and Phone Number to play a free game. What do you do?",
-          options: ["❌ Fill in everything right away", "✅ Ask a parent or guardian before sharing any personal info"],
-          answer: 1, xp: 25,
-          afterMsg: "Personal details are private — always get parent approval first!"
-        },
-        {
-          question: "Vault Lock 2: Which of these is SAFE to share on an online gaming avatar profile?",
-          options: ["✅ Your favorite game color or animal avatar", "❌ The name of your school and street address"],
-          answer: 0, xp: 25,
-          afterMsg: "Avatars and hobby tags keep your real identity safely protected!"
-        },
-        {
-          question: "Vault Lock 3: Your best friend asks for your account password so they can unlock an item for you. What should you do?",
-          options: ["❌ Give them the password since you trust them", "✅ Keep your password private — never share it with anyone except parents"],
-          answer: 1, xp: 25,
-          afterMsg: "Passwords are like toothbrushes — they are only for YOU to use!"
-        },
-        {
-          question: "Vault Lock 4: A flashlight or calculator app requests permission to access your Contacts and GPS location. What do you do?",
-          options: ["✅ Deny access — a calculator has no legitimate need for your location", "❌ Allow all permissions without checking"],
-          answer: 0, xp: 25,
-          afterMsg: "Always check why an app needs permissions before tapping allow!"
+      // Stage 1: Interactive Password Strength Forge Simulator
+      let pass = 'dragon';
+      
+      const renderPassLab = () => {
+        clearUI();
+        const lab = el('div', 'pass-lab-card');
+        lab.style.cssText = `
+          position: fixed; top: 44%; left: 50%; transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+          border: 3.5px solid #38bdf8; border-radius: 26px; padding: 24px 28px;
+          box-shadow: 0 25px 70px rgba(56, 189, 248, 0.35); z-index: 90;
+          max-width: 640px; width: 92%; color: #fff; text-align: center;
+          animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+        `;
+        
+        // Calculate score & criteria
+        const hasLen = pass.length >= 10;
+        const hasUpper = /[A-Z]/.test(pass);
+        const hasNum = /[0-9]/.test(pass);
+        const hasSym = /[^A-Za-z0-9]/.test(pass);
+        
+        let score = 20;
+        if(pass.length >= 8) score += 15;
+        if(hasLen) score += 20;
+        if(hasUpper) score += 15;
+        if(hasNum) score += 15;
+        if(hasSym) score += 15;
+        score = Math.min(100, score);
+        
+        let meterColor = '#ef4444';
+        let strengthText = '🔴 WEAK — Easy to crack!';
+        let crackTime = '⏱️ Crack Time: 0.002 seconds by brute-force bot!';
+        if(score >= 40 && score < 70){
+          meterColor = '#f59e0b'; strengthText = '🟡 MEDIUM — Getting Better!';
+          crackTime = '⏱️ Crack Time: 45 minutes by hackers';
+        } else if(score >= 70 && score < 95){
+          meterColor = '#10b981'; strengthText = '🟢 STRONG — Good Defense!';
+          crackTime = '⏱️ Crack Time: 350 Years!';
+        } else if(score >= 95){
+          meterColor = '#06b6d4'; strengthText = '🛡️ ULTRA-SECURE — Impenetrable!';
+          crackTime = '⏱️ Crack Time: 8.5 MILLION YEARS!';
         }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_027.mp3', text:"Locked and safe! I’ll never post my address or password online."},
-          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_028.mp3', text:"Perfect. Private info is like a house key — keep it to yourself."}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Vault Triple-Locked! You successfully protected your digital identity and personal safety."});
-        });
-      }, api);
+        
+        lab.innerHTML = `
+          <div style="font-size:12px;font-weight:800;letter-spacing:2px;color:#38bdf8;text-transform:uppercase;margin-bottom:4px;">CYBER DEFENSE FORGE</div>
+          <h3 style="margin:0 0 14px;color:#fff;font-size:22px;font-weight:900;">Create an Ultra-Secure Password</h3>
+          <p style="margin:0 0 14px;font-size:14px;color:#cbd5e1;">Use the power chips below to forge an impenetrable master password!</p>
+          
+          <div style="background:rgba(15,23,42,0.8);border:2px solid #475569;border-radius:16px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <span style="font-family:monospace;font-size:22px;letter-spacing:2px;color:#f8fafc;font-weight:700;">${pass}</span>
+            <span style="font-size:13px;background:rgba(56,189,248,0.2);color:#38bdf8;padding:4px 10px;border-radius:8px;font-weight:700;">${pass.length} chars</span>
+          </div>
+          
+          <!-- Strength Meter Bar -->
+          <div style="background:#334155;border-radius:10px;height:12px;width:100%;overflow:hidden;margin-bottom:10px;">
+            <div style="background:${meterColor};height:100%;width:${score}%;transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800;margin-bottom:14px;">
+            <span style="color:${meterColor}">${strengthText}</span>
+            <span style="color:#94a3b8">${crackTime}</span>
+          </div>
+          
+          <!-- Checklist -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(30,41,59,0.7);padding:10px 14px;border-radius:12px;margin-bottom:16px;text-align:left;font-size:13px;font-weight:600;">
+            <div style="color:${hasLen ? '#4ade80' : '#94a3b8'}">${hasLen ? '✅' : '⚪'} 10+ Characters</div>
+            <div style="color:${hasUpper ? '#4ade80' : '#94a3b8'}">${hasUpper ? '✅' : '⚪'} Capital Letters (A-Z)</div>
+            <div style="color:${hasNum ? '#4ade80' : '#94a3b8'}">${hasNum ? '✅' : '⚪'} Numbers (0-9)</div>
+            <div style="color:${hasSym ? '#4ade80' : '#94a3b8'}">${hasSym ? '✅' : '⚪'} Symbols (@ # $ !)</div>
+          </div>
+          
+          <!-- Booster Action Chips -->
+          <div id="chipsWrap" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;"></div>
+        `;
+        
+        const chipsWrap = lab.querySelector('#chipsWrap');
+        
+        const addChip = (txt, action) => {
+          const c = el('button', 'chip-btn', txt);
+          c.style.cssText = 'background:#1e293b;border:1.5px solid #475569;color:#e2e8f0;padding:8px 14px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s;';
+          c.onmouseenter = () => { c.style.background = '#334155'; c.style.borderColor = '#38bdf8'; };
+          c.onmouseleave = () => { c.style.background = '#1e293b'; c.style.borderColor = '#475569'; };
+          c.onclick = () => {
+            try { SFX.click(); } catch(e){}
+            action();
+            renderPassLab();
+          };
+          chipsWrap.appendChild(c);
+        };
+        
+        if(!hasUpper) addChip('🔠 Add Capital "Rocket"', ()=>{ pass = pass + 'Rocket'; });
+        if(!hasNum) addChip('🔢 Add Number "99"', ()=>{ pass = pass + '99'; });
+        if(!hasSym) addChip('⚡ Add Symbol "#$!"', ()=>{ pass = pass + '#$!'; });
+        if(!hasLen && pass.length < 10) addChip('📏 Add Extra Words', ()=>{ pass = 'Super' + pass; });
+        addChip('🔄 Reset', ()=>{ pass = 'dragon'; });
+        
+        // Submit / Unlock Button
+        const submitBtn = el('button', 'btn primary', score >= 95 ? '🔓 SUBMIT & UNLOCK VAULT' : '🔒 Boost Password to 100%');
+        submitBtn.style.cssText = `
+          width: 100%; padding: 14px; font-size: 16px; font-weight: 800; border-radius: 16px; border: none;
+          background: ${score >= 95 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#475569'};
+          color: #fff; cursor: ${score >= 95 ? 'pointer' : 'not-allowed'};
+          box-shadow: ${score >= 95 ? '0 10px 25px rgba(16, 185, 129, 0.45)' : 'none'};
+          transition: all 0.2s;
+        `;
+        submitBtn.onclick = () => {
+          if(score >= 95){
+            try { SFX.correct(); } catch(e){}
+            // Animate 3D Vault Door opening
+            lockDial.material.color.setHex(0x10b981);
+            safeDoor.position.x = 2.4; safeDoor.rotation.y = 1.2;
+            wheel.position.x = 2.4; lockDial.position.x = 2.4;
+            
+            clearUI();
+            addXP(50);
+            toast('🎉 100% SECURE PASSWORD CREATED! Vault Unlocked!');
+            
+            setTimeout(()=>{
+              // Stage 2: Privacy Sorting Scenarios with Consequence Engine
+              quizChain([
+                {
+                  question: "Vault Lock 1: A website asks for your Full Name, Home Address, and Phone Number to play a free game. What do you do?",
+                  options: ["Fill in everything right away", "Ask a parent or guardian before sharing any personal info"],
+                  answer: 1, xp: 25,
+                  afterMsg: "Personal details are private — always get parent approval first!"
+                },
+                {
+                  question: "Vault Lock 2: Which of these is SAFE to share on an online gaming avatar profile?",
+                  options: ["Your favorite game color or animal avatar", "The name of your school and street address"],
+                  answer: 0, xp: 25,
+                  afterMsg: "Avatars and hobby tags keep your real identity safely protected!"
+                },
+                {
+                  question: "Vault Lock 3: Your best friend asks for your account password so they can unlock an item for you. What should you do?",
+                  options: ["Give them the password since you trust them", "Keep your password private — never share it with anyone except parents"],
+                  answer: 1, xp: 25,
+                  afterMsg: "Passwords are like toothbrushes — they are only for YOU to use!"
+                }
+              ], ()=>{
+                const postDlg = [
+                  {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_027.mp3', text:"Locked and safe! I’ll never post my address or password online."},
+                  {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_028.mp3', text:"Perfect. Private info is like a house key — keep it to yourself."}
+                ];
+                runDialogue(postDlg, ()=>{
+                  api.done({msg:"Vault Triple-Locked! You forged an impenetrable password and protected personal privacy."});
+                });
+              }, api);
+            }, 1200);
+          } else {
+            toast('💡 Tap the booster chips above to make your password ultra-secure!');
+          }
+        };
+        lab.appendChild(submitBtn);
+        addUI(lab);
+      };
+      
+      renderPassLab();
     });
   }
 });
 
 /* =====================================================================
-   CHAPTER 08: Scam Alley (Spotting Phishing & Fake Prizes)
+   CHAPTER 08: Scam Alley (Phishing & Malware Threat Defense Simulator)
    ===================================================================== */
 registerChapter({
   id:'ch8', title:'Scam Alley', logtag:'SCAM ALLEY',
-  bg1:'#f2996f', bg2:'#ffe6d8',
+  bg1:'#7c2d12', bg2:'#991b1b',
   endTitle:'Chapter 8 Complete!',
   learned:[
     'Scams use urgency, excitement, or fear to make you click.',
@@ -3923,12 +4752,22 @@ registerChapter({
     'Stop, think, check with a parent or teacher!'
   ],
   build(root, api){
-    addLights(root, 'cool'); ground(root, 0xe0a98f, 40);
+    addLights(root, 'cool'); ground(root, 0x1e293b, 40);
     
-    const banner = Props.screenPanel('🎁', 'YOU WON A FREE PHONE!', 3.8, 2.0);
-    banner.position.set(0, 2.4, -3.2); root.add(banner);
+    // 3D Cyber Defense Console
+    const consoleBase = box(4.4, 1.2, 2.2, 0x0f172a); consoleBase.position.set(0, 0.6, -3.2); root.add(consoleBase);
+    const screenFrame = box(4.2, 2.6, 0.14, 0x1e293b); screenFrame.position.set(0, 2.4, -3.2); root.add(screenFrame);
     
-    const {b, g} = bringKids(root, -1.8, 1.4, 1.8, 1.4, 0.3);
+    const banner = Props.screenPanel('🚨', 'CYBER THREAT DEFENSE LAB', 3.8, 2.0);
+    banner.position.set(0, 2.4, -3.12); root.add(banner);
+    
+    // Radar Beacons
+    [[-2.8, -3.2], [2.8, -3.2]].forEach(([rx, rz]) => {
+      const pole = cyl(0.08, 0.08, 3.2, 0x475569, 12); pole.position.set(rx, 1.6, rz); root.add(pole);
+      const beacon = sph(0.2, 0xef4444, {emissive:0xef4444, emissiveIntensity:0.9}); beacon.position.set(rx, 3.2, rz); root.add(beacon);
+    });
+    
+    const {b, g} = bringKids(root, -2.0, 1.4, 2.0, 1.4, 0.3);
     camera.position.set(0, 3.2, 6.2); Cam.look.set(0, 1.6, -1);
     
     const introDlg = [
@@ -3941,26 +4780,26 @@ registerChapter({
     runDialogue(introDlg, ()=>{
       quizChain([
         {
-          question: "Scam Detection 1: A pop-up shouts: 'CONGRATULATIONS! You won a $1,000 iPhone! Click here NOW!' What is the truth?",
-          options: ["❌ It must be real because it has flashing balloons!", "✅ It is a scam — you cannot win contests you never entered"],
+          question: "Scam Threat 1: A flashing pop-up shouts: 'CONGRATULATIONS! You won a $1,000 iPhone! Click here NOW!' What is the truth?",
+          options: ["It must be real because it has flashing balloons!", "It is a scam — you cannot win contests you never entered"],
           answer: 1, xp: 25,
           afterMsg: "Scammers use fake prizes to trick people into clicking dangerous links!"
         },
         {
-          question: "Scam Detection 2: An urgent email arrives: 'Your account will be DELETED in 15 minutes unless you click this link!' What should you do?",
-          options: ["✅ Calm down and verify with an adult — urgency and panic are classic scam red flags", "❌ Panic and type your password into the link quickly"],
+          question: "Scam Threat 2: An urgent email arrives: 'Your gaming account will be DELETED in 15 minutes unless you click this link!' What should you do?",
+          options: ["Calm down and verify with an adult — urgency and panic are classic scam red flags", "Panic and type your password into the link quickly"],
           answer: 0, xp: 25,
           afterMsg: "Scammers use artificial fear to rush you. Always pause and ask a parent!"
         },
         {
-          question: "Scam Detection 3: A website offers: 'Download this free cheat tool to get 50,000 free game coins!' What is the risk?",
-          options: ["❌ It is completely safe because other comments say 'it works'", "✅ It is likely malware or a virus designed to steal account credentials"],
+          question: "Scam Threat 3: A website offers: 'Download this free cheat tool to get 50,000 free game coins!' What is the real risk?",
+          options: ["It is completely safe because anonymous comments say 'it works'", "It is malware or a trojan virus designed to steal passwords"],
           answer: 1, xp: 25,
           afterMsg: "Free game cheats and generator downloads are the #1 source of device malware!"
         },
         {
-          question: "Scam Detection 4: A pop-up says: 'VIRUS DETECTED! Call 1-800-XXX-XXXX immediately to clean your PC.' What do you do?",
-          options: ["✅ Close the browser tab — web browsers cannot scan your hard drive for viruses", "❌ Call the phone number and give them remote access to your computer"],
+          question: "Scam Threat 4: A browser pop-up says: 'VIRUS DETECTED! Call 1-800-XXX-XXXX immediately to clean your PC.' What do you do?",
+          options: ["Close the browser tab — web browsers cannot scan your hard drive for viruses", "Call the phone number and give them remote access to your computer"],
           answer: 0, xp: 25,
           afterMsg: "Real antivirus protection never uses browser pop-up phone numbers!"
         }
@@ -3978,75 +4817,235 @@ registerChapter({
 });
 
 /* =====================================================================
-   CHAPTER 09: Stranger Danger Online (Safe Chat Rules)
+   CHAPTER 09: Stranger Danger Online (Multiplayer Game & Chat Simulator)
    ===================================================================== */
 registerChapter({
   id:'ch9', title:'Stranger Danger Online', logtag:'SAFETY',
-  bg1:'#6fa8ea', bg2:'#e6eeff',
+  bg1:'#0c4a6e', bg2:'#075985',
   endTitle:'Chapter 9 Complete!',
   learned:[
-    'Online friends are still strangers in the real world.',
-    'Never share photos, school name, or meet someone in person.',
+    'Online gaming friends are still strangers in the real world.',
+    'Never share real photos, school name, or meet someone in person.',
     'If someone makes you uncomfortable: Block, Ignore, Tell an adult!'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0x9fbfe6, 40);
-    const desk = Props.desk(); desk.position.set(0, 0, -2.4); root.add(desk);
-    const laptop = Props.laptop(true); laptop.scale.set(1.35, 1.35, 1.35); laptop.position.set(0, 0.98, -2.4); root.add(laptop);
+    addLights(root, 'warm'); ground(root, 0x0f172a, 40);
     
-    const {b, g} = bringKids(root, -1.6, 1.4, 1.6, 1.4, 0.3);
-    camera.position.set(0, 3.2, 6.4); Cam.look.set(0, 1.4, -1);
+    // 3D Esports Gaming Station
+    const desk = box(4.6, 0.14, 2.2, 0x1e293b); desk.position.set(0, 0.9, -2.4); root.add(desk);
+    const deskLegL = box(0.12, 0.9, 2.0, 0x0f172a); deskLegL.position.set(-2.1, 0.45, -2.4); root.add(deskLegL);
+    const deskLegR = box(0.12, 0.9, 2.0, 0x0f172a); deskLegR.position.set(2.1, 0.45, -2.4); root.add(deskLegR);
+    
+    // Curved Ultrawide Gaming Monitor
+    const monBase = cyl(0.3, 0.35, 0.06, 0x334155, 16); monBase.position.set(0, 0.98, -2.4); root.add(monBase);
+    const monStand = box(0.08, 0.6, 0.08, 0x475569); monStand.position.set(0, 1.25, -2.4); root.add(monStand);
+    const monScreen = box(3.2, 1.8, 0.1, 0x0f172a); monScreen.position.set(0, 1.9, -2.35); root.add(monScreen);
+    const monGlow = box(3.0, 1.6, 0.02, 0x38bdf8, {emissive:0x0284c7, emissiveIntensity:0.6}); monGlow.position.set(0, 1.9, -2.29); root.add(monGlow);
+    
+    // RGB Gaming Keyboard & Mouse
+    const kb = box(1.1, 0.04, 0.35, 0x1e293b); kb.position.set(-0.2, 0.98, -1.8); root.add(kb);
+    const mouse = box(0.12, 0.04, 0.18, 0x0284c7); mouse.position.set(0.65, 0.98, -1.8); root.add(mouse);
+    
+    const {b, g} = bringKids(root, -1.8, 1.4, 1.8, 1.4, 0.3);
+    camera.position.set(0, 3.2, 6.4); Cam.look.set(0, 1.6, -1);
     
     const introDlg = [
-      {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_035.mp3', text:"Someone you don’t know just started chatting with you online. Let’s see what they want."},
-      {who:'boy', expr:'confused', pose:'think', audio:'audio/boy_036.mp3', text:"I’ll choose what to do at each step. Help me pick safely!"}
+      {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_035.mp3', text:"We just joined a multiplayer game arena. An unknown player started messaging in the chat."},
+      {who:'boy', expr:'confused', pose:'think', audio:'audio/boy_036.mp3', text:"Let’s watch what they say and make smart choices on the chat screen!"}
     ];
     
     runDialogue(introDlg, ()=>{
-      quizChain([
+      // Multiplayer Game & Live In-Game Chat Simulator
+      const chatScenarios = [
         {
-          question: "Online Safety 1: An unknown player in an online game asks: 'What is your real full name and what city do you live in?' What do you do?",
-          options: ["❌ Tell them so they can be your friend", "✅ Do not answer, block them, and tell a parent or teacher"],
+          gameTitle: '🎮 PIXELQUEST ARENA — LIVE GAME CHAT',
+          sender: 'ShadowGamer_99',
+          avatar: '🥷',
+          badge: 'Level 42 Stranger',
+          chatMsg: "Yo! You played awesome in that match. What is your real full name, age, and which school do you go to? I'll send you 5,000 free Gems!",
+          question: "How do you respond to ShadowGamer_99 in the in-game chat?",
+          options: [
+            "Tell them: 'I am Aarav, Grade 6 at Oakridge School'",
+            "Keep private: 'I only use my game tag PixelKnight. I never share real personal details.'"
+          ],
           answer: 1, xp: 25,
-          afterMsg: "People online are still strangers — keep your real identity private!"
+          afterMsg: "People online are still strangers — never share real names or school locations!"
         },
         {
-          question: "Online Safety 2: An online game acquaintance suggests: 'Let\'s meet at the park near your house after school.' What is the golden rule?",
-          options: ["❌ Go meet them alone since you\'ve played together for weeks", "✅ NEVER agree to meet an online-only contact in person without parent supervision"],
+          gameTitle: '🎮 PIXELQUEST ARENA — LIVE GAME CHAT',
+          sender: 'ShadowGamer_99',
+          avatar: '🥷',
+          badge: 'Level 42 Stranger',
+          chatMsg: "Hey, I live really close to your area! Let's meet alone at the park behind your house after school today. Don't tell your parents, it's a secret surprise!",
+          question: "ShadowGamer_99 is asking for a secret real-world meetup. What is the golden safety rule?",
+          options: [
+            "Sneak out to meet them alone since you've played games together for weeks",
+            "NEVER meet an online stranger alone! Hit [BLOCK & REPORT] and tell parents immediately!"
+          ],
           answer: 1, xp: 25,
           afterMsg: "Never meet anyone in person who you only know through the internet!"
         },
         {
-          question: "Online Safety 3: Someone in a chat room sends a message that makes you feel uncomfortable, confused, or scared. What should you do?",
-          options: ["✅ Tell a trusted adult right away, take a screenshot, and block the user", "❌ Keep it a secret and delete the chat so no one finds out"],
-          answer: 0, xp: 25,
-          afterMsg: "Your trusted parents and teachers are always there to support and protect you!"
+          gameTitle: '🎮 PIXELQUEST ARENA — LIVE GAME CHAT',
+          sender: 'MysteryTrader_VIP',
+          avatar: '🎭',
+          badge: 'Unknown Contact',
+          chatMsg: "Send me a selfie of yourself in your school uniform right now and I will gift you my ultra-rare Legendary Fire Dragon pet!",
+          question: "MysteryTrader_VIP wants a photo of you in school uniform. What do you do?",
+          options: [
+            "Send a quick selfie to get the rare dragon pet",
+            "Say NO, report the user on the game platform, and tell your parents"
+          ],
+          answer: 1, xp: 25,
+          afterMsg: "Never trade personal photos or real-world details for virtual items!"
         },
         {
-          question: "Online Safety 4: A player offers to give you rare in-game pets if you send a photo of yourself. What is the right reaction?",
-          options: ["❌ Send a quick selfie to get the free pet", "✅ Say NO, report the user on the game platform, and tell your parents"],
-          answer: 1, xp: 25,
-          afterMsg: "Never trade personal photos for virtual items or game currency!"
+          gameTitle: '🎮 PIXELQUEST ARENA — LIVE GAME CHAT',
+          sender: 'ToxicTroll_00',
+          avatar: '👹',
+          badge: 'Angry Player',
+          chatMsg: "You ruined our match! You are terrible and I am going to find where you live and message everyone you know!",
+          question: "Someone is sending threatening, scary messages that make you uncomfortable. What do you do?",
+          options: [
+            "Tell a trusted adult right away, take a screenshot for proof, and block the user",
+            "Keep it a secret, feel scared, and argue back with mean comments"
+          ],
+          answer: 0, xp: 25,
+          afterMsg: "Always tell trusted parents or teachers right away when messages feel scary or uncomfortable!"
         }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_037.mp3', text:"That felt uncomfortable — so I ignored, blocked, and would tell my parents."},
-          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_038.mp3', text:"That uncomfortable feeling IS the warning. Never share private info, and always tell a trusted adult."}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Safety Shield Activated! You know exactly how to establish strong online boundaries."});
+      ];
+      
+      let curStep = 0;
+      
+      const renderChatScenario = () => {
+        if(curStep >= chatScenarios.length){
+          const postDlg = [
+            {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_037.mp3', text:"That stranger got blocked immediately! I’ll never give my real name, photo, or school."},
+            {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_038.mp3', text:"That uncomfortable feeling IS the warning. Never share private info, and always tell a trusted adult."}
+          ];
+          runDialogue(postDlg, ()=>{
+            api.done({msg:"Safety Shield Activated! You mastered in-game stranger danger defense."});
+          });
+          return;
+        }
+        
+        clearUI();
+        const sc = chatScenarios[curStep];
+        
+        const gameWin = el('div', 'game-chat-sim');
+        gameWin.style.cssText = `
+          position: fixed; top: 44%; left: 50%; transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #090d16 0%, #111827 100%);
+          border: 3px solid #38bdf8; border-radius: 24px; padding: 22px 26px;
+          box-shadow: 0 25px 70px rgba(14, 165, 233, 0.4); z-index: 90;
+          max-width: 660px; width: 92%; color: #fff; animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+        `;
+        
+        gameWin.innerHTML = `
+          <!-- Game Header Bar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1e293b;padding-bottom:10px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;letter-spacing:1px;color:#38bdf8;">
+              <span style="font-size:16px;">🎮</span> PIXELQUEST ARENA • CHAT ROOM
+            </div>
+            <div style="display:flex;gap:6px;">
+              <span style="background:#ef4444;width:12px;height:12px;border-radius:50%;display:inline-block;"></span>
+              <span style="background:#f59e0b;width:12px;height:12px;border-radius:50%;display:inline-block;"></span>
+              <span style="background:#10b981;width:12px;height:12px;border-radius:50%;display:inline-block;"></span>
+            </div>
+          </div>
+          
+          <!-- Incoming Stranger Chat Message Bubble -->
+          <div style="background:#1e293b;border-left:4px solid #f59e0b;border-radius:14px;padding:14px 16px;margin-bottom:16px;text-align:left;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:22px;">${sc.avatar}</span>
+              <span style="font-weight:800;color:#f8fafc;font-size:15px;">${sc.sender}</span>
+              <span style="font-size:11px;background:#334155;color:#94a3b8;padding:2px 8px;border-radius:6px;font-weight:700;">${sc.badge}</span>
+            </div>
+            <div style="font-size:15px;line-height:1.45;color:#e2e8f0;font-family:system-ui, sans-serif;">
+              "${sc.chatMsg}"
+            </div>
+          </div>
+          
+          <!-- Decision Prompt -->
+          <div style="font-size:14.5px;font-weight:800;color:#38bdf8;margin-bottom:12px;text-align:center;">
+            ❓ ${sc.question}
+          </div>
+          
+          <!-- Reply Choice Buttons -->
+          <div id="choiceBox" style="display:flex;flex-direction:column;gap:10px;"></div>
+        `;
+        
+        const choiceBox = gameWin.querySelector('#choiceBox');
+        
+        sc.options.forEach((opt, optIdx) => {
+          const btn = el('button', 'btn primary', cleanOptionText(opt));
+          btn.style.cssText = `
+            padding: 13px 18px; font-size: 14.5px; font-weight: 700; border-radius: 14px; text-align: left;
+            background: #1e293b; color: #f8fafc; border: 1.5px solid #475569; cursor: pointer;
+            line-height: 1.4; transition: all 0.15s;
+          `;
+          btn.onmouseenter = () => { btn.style.background = '#334155'; btn.style.borderColor = '#38bdf8'; };
+          btn.onmouseleave = () => { btn.style.background = '#1e293b'; btn.style.borderColor = '#475569'; };
+          
+          btn.onclick = () => {
+            const isCorrect = (optIdx === sc.answer);
+            if(isCorrect){
+              clearUI();
+              try { SFX.correct(); } catch(e){}
+              encourage(true, sc.afterMsg, {points: sc.xp});
+              curStep++;
+              setTimeout(renderChatScenario, 1500);
+            } else {
+              try { SFX.wrong(); } catch(e){}
+              
+              let conTitle = 'Stranger Danger Hazard!';
+              let conIcon = '🚨';
+              let conDesc = 'By sharing personal details or agreeing to meet strangers, real-world personal safety was severely breached.';
+              let lesson = 'Online contacts are strangers. Never give real names, addresses, school info, or meet them in person.';
+              
+              if(opt.toLowerCase().includes('oakridge') || opt.toLowerCase().includes('aarav') || opt.toLowerCase().includes('name')){
+                conTitle = 'Real-World Identity Leaked!';
+                conIcon = '📱';
+                conDesc = 'ShadowGamer_99 recorded your real name and school location. Strangers can now track your physical whereabouts!';
+                lesson = 'Never share real names or school names in online game chats. Keep identity purely inside your avatar.';
+              } else if(opt.toLowerCase().includes('meet') || opt.toLowerCase().includes('park') || opt.toLowerCase().includes('sneak')){
+                conTitle = 'Extreme Risk: Secret Meetup!';
+                conIcon = '⚠️';
+                conDesc = 'Agreeing to a secret meetup is the most dangerous online safety violation. Strangers online are not who they claim to be!';
+                lesson = 'NEVER agree to meet an online contact alone. Always inform trusted parents or teachers immediately.';
+              } else if(opt.toLowerCase().includes('selfie') || opt.toLowerCase().includes('photo')){
+                conTitle = 'Privacy Breach: Photo Sent!';
+                conIcon = '📸';
+                conDesc = 'A photo showing your face and school uniform was saved to a stranger’s device and can be shared anywhere!';
+                lesson = 'Never trade real photos of yourself for virtual items, pets, or game gems.';
+              }
+              
+              showConsequenceModal({
+                title: conTitle,
+                icon: conIcon,
+                consequence: conDesc,
+                lesson: lesson,
+                onRetry: renderChatScenario
+              });
+            }
+          };
+          choiceBox.appendChild(btn);
         });
-      }, api);
+        
+        addUI(gameWin);
+      };
+      
+      renderChatScenario();
     });
   }
 });
 
 /* =====================================================================
-   CHAPTER 10: Truth Lab (Fact Checking & Critical Thinking)
+   CHAPTER 10: Truth Lab (Fact-Checking & Deepfake Detective Station)
    ===================================================================== */
 registerChapter({
   id:'ch10', title:'Truth Lab', logtag:'TRUTH LAB',
-  bg1:'#9a8ef0', bg2:'#ece8ff',
+  bg1:'#4338ca', bg2:'#3730a3',
   endTitle:'Chapter 10 Complete!',
   learned:[
     'Not everything online or on social media is true.',
@@ -4054,52 +5053,185 @@ registerChapter({
     'Think critically before you believe or share information!'
   ],
   build(root, api){
-    addLights(root, 'cool'); ground(root, 0xa79fe0, 40);
-    const screen = Props.screenPanel('🔎', 'TRUTH LAB DETECTIVE', 3.4, 2.0); screen.position.set(0, 2.4, -3.8); root.add(screen);
+    addLights(root, 'cool'); ground(root, 0x1e1b4b, 40);
     
-    const {b, g} = bringKids(root, -1.6, 1.2, 1.6, 1.2, 0.3);
+    // 3D Detective Science Workstation
+    const desk = box(4.8, 1.2, 2.4, 0x0f172a); desk.position.set(0, 0.6, -3.4); root.add(desk);
+    const screenFrame = box(4.2, 2.6, 0.14, 0x1e293b); screenFrame.position.set(0, 2.4, -3.4); root.add(screenFrame);
+    
+    const screen = Props.screenPanel('🔎', 'TRUTH LAB FACT-CHECKER', 3.8, 2.0);
+    screen.position.set(0, 2.4, -3.32); root.add(screen);
+    
+    // Holographic Magnifying Lens
+    const lensRing = new T.Mesh(new T.TorusGeometry(0.5, 0.05, 12, 32), mat(0x38bdf8, {emissive:0x38bdf8, emissiveIntensity:0.8}));
+    lensRing.position.set(-2.2, 2.2, -2.5); root.add(lensRing);
+    const lensHandle = cyl(0.04, 0.04, 0.6, 0x94a3b8, 8); lensHandle.rotation.z = Math.PI/4; lensHandle.position.set(-2.55, 1.85, -2.5); root.add(lensHandle);
+    
+    const {b, g} = bringKids(root, -1.8, 1.2, 1.8, 1.2, 0.3);
     camera.position.set(0, 3.2, 6.2); Cam.look.set(0, 1.6, -1);
     
     const introDlg = [
-      {who:'boy', expr:'confused', pose:'think', audio:'audio/boy_039.mp3', text:"A website says ‘drinking water after fruit is dangerous.’ Is that… true?"},
+      {who:'boy', expr:'confused', pose:'think', audio:'audio/boy_039.mp3', text:"A website says ‘drinking salt water makes you jump 10x higher.’ Is that… true?"},
       {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_040.mp3', text:"Let’s not just believe it. In the Truth Lab we CHECK. Who said it? Where’s the evidence?"}
     ];
     
     runDialogue(introDlg, ()=>{
-      quizChain([
+      const cases = [
         {
-          question: "Fact-Check 1: Headline: 'Drinking salt water makes you jump 10x higher!' How do you check if it\'s true?",
-          options: ["❌ Believe it because it has 50,000 likes", "✅ Check reliable science encyclopedias and ask a doctor/teacher"],
+          caseNum: 'CASE FILE #1: VIRAL HEALTH MYTH',
+          headline: '“Drinking salt water makes humans jump 10x higher!”',
+          shares: '950,000 Views • Trending on VideoApp',
+          inspectorTool: '🔍 SOURCE INSPECTOR: Published by anonymous account with no medical degrees. Medical Encyclopedia confirms: Salt water causes severe dehydration and organ damage!',
+          question: "What is your detective verdict on this viral claim?",
+          options: [
+            "Believe it because it has 950,000 likes and shares",
+            "Flag as Dangerous Viral Hoax — likes and views do not equal medical truth"
+          ],
           answer: 1, xp: 25,
           afterMsg: "Likes and views do not equal scientific truth — verify with authoritative sources!"
         },
         {
-          question: "Fact-Check 2: A viral message claims: 'School is cancelled nationwide next month!' What is the detective step?",
-          options: ["✅ Check your school\'s official verified website or news broadcast", "❌ Forward it to all classmates right away to spread the word"],
+          caseNum: 'CASE FILE #2: SCHOOL HOLIDAY RUMOR',
+          headline: '“All schools closed nationwide for 3 months starting tomorrow!”',
+          shares: 'Forwarded Many Times in Class Group Chat',
+          inspectorTool: '🔍 OFFICIAL PORTAL CHECK: Ministry of Education website shows regular schedule. Zero verified news outlets reported this claim.',
+          question: "What is the responsible action before spreading this rumor?",
+          options: [
+            "Check the official verified school website or news broadcast",
+            "Forward it to all classmates and family group chats immediately"
+          ],
           answer: 0, xp: 25,
           afterMsg: "Always check the official source before spreading viral rumors!"
         },
         {
-          question: "Fact-Check 3: You see a picture of a celebrity saying something shocking. How can photos be misleading?",
-          options: ["❌ If someone\'s photo is there, the quote must be real", "✅ Anyone can edit text over a photo or use AI — look for the original video/interview"],
+          caseNum: 'CASE FILE #3: AI-GENERATED CELEBRITY POST',
+          headline: 'Shocking quote attributed to famous space scientist over a photo.',
+          shares: 'Viral Social Media Image Post',
+          inspectorTool: '🔍 REVERSE IMAGE SEARCH: Original photo modified by AI. Official interview video proves the scientist never spoke those words.',
+          question: "How can online photos and quotes be misleading?",
+          options: [
+            "If someone's photo is there, the quote must be 100% authentic",
+            "Anyone can edit text or generate AI images — check original unedited interview video"
+          ],
           answer: 1, xp: 25,
           afterMsg: "Look for primary sources and unedited original footage!"
         },
         {
-          question: "Fact-Check 4: What is the 3-Question Detective Rule before trusting online information?",
-          options: ["✅ Who made it? What is their evidence? Can I verify it on a trusted site?", "❌ Is it loud? Does it have bright colors? Did my friend send it?"],
+          caseNum: 'CASE FILE #4: THE DETECTIVE CODE',
+          headline: 'Mastering the 3-Question Truth Detective Rule.',
+          shares: 'Core Media Literacy Protocol',
+          inspectorTool: '🔍 DETECTIVE PROTOCOL: 1. WHO created it? 2. WHAT is their evidence? 3. CAN I verify it on a trusted authoritative site?',
+          question: "What is the 3-Question Detective Rule before trusting online information?",
+          options: [
+            "Who made it? What is their evidence? Can I verify it on a trusted site?",
+            "Is it loud? Does it have bright colors? Did my friend send it?"
+          ],
           answer: 0, xp: 25,
           afterMsg: "Who, Evidence, and Verification — the 3 golden keys of Truth Detectives!"
         }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_041.mp3', text:"So I shouldn’t believe something just because it’s online or looks official."},
-          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_042.mp3', text:"Right! Who said it? Is there evidence? Can I check a trusted source? Think before you believe."}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Detective Badge Earned! You question claims, inspect evidence, and verify truth."});
+      ];
+      
+      let cIdx = 0;
+      
+      const renderTruthCase = () => {
+        if(cIdx >= cases.length){
+          const postDlg = [
+            {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_041.mp3', text:"So I shouldn’t believe something just because it’s online or looks official."},
+            {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_042.mp3', text:"Right! Who said it? Is there evidence? Can I check a trusted source? Think before you believe."}
+          ];
+          runDialogue(postDlg, ()=>{
+            api.done({msg:"Detective Badge Earned! You question claims, inspect evidence, and verify truth."});
+          });
+          return;
+        }
+        
+        clearUI();
+        const cs = cases[cIdx];
+        
+        const card = el('div', 'truth-case-card');
+        card.style.cssText = `
+          position: fixed; top: 44%; left: 50%; transform: translate(-50%, -50%);
+          background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+          border: 3.5px solid #818cf8; border-radius: 26px; padding: 22px 26px;
+          box-shadow: 0 25px 70px rgba(99, 102, 241, 0.4); z-index: 90;
+          max-width: 650px; width: 92%; color: #fff; animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+        `;
+        
+        card.innerHTML = `
+          <div style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#a5b4fc;text-transform:uppercase;margin-bottom:6px;">
+            🔎 ${cs.caseNum}
+          </div>
+          <h3 style="margin:0 0 8px;color:#f8fafc;font-size:19px;font-weight:900;line-height:1.35;">${cs.headline}</h3>
+          <div style="font-size:12.5px;color:#cbd5e1;margin-bottom:12px;font-weight:600;">📊 ${cs.shares}</div>
+          
+          <!-- Inspector Tool Result Box -->
+          <div style="background:rgba(99,102,241,0.15);border:1.5px solid #6366f1;border-radius:14px;padding:12px 16px;margin-bottom:16px;text-align:left;font-size:14px;line-height:1.45;color:#e0e7ff;">
+            ${cs.inspectorTool}
+          </div>
+          
+          <div style="font-size:14.5px;font-weight:800;color:#38bdf8;margin-bottom:12px;text-align:center;">
+            ❓ ${cs.question}
+          </div>
+          
+          <div id="verdictBox" style="display:flex;flex-direction:column;gap:10px;"></div>
+        `;
+        
+        const vBox = card.querySelector('#verdictBox');
+        
+        cs.options.forEach((opt, optIdx) => {
+          const btn = el('button', 'btn primary', cleanOptionText(opt));
+          btn.style.cssText = `
+            padding: 13px 18px; font-size: 14.5px; font-weight: 700; border-radius: 14px; text-align: left;
+            background: #1e293b; color: #f8fafc; border: 1.5px solid #475569; cursor: pointer;
+            line-height: 1.4; transition: all 0.15s;
+          `;
+          btn.onmouseenter = () => { btn.style.background = '#334155'; btn.style.borderColor = '#818cf8'; };
+          btn.onmouseleave = () => { btn.style.background = '#1e293b'; btn.style.borderColor = '#475569'; };
+          
+          btn.onclick = () => {
+            const isCorrect = (optIdx === cs.answer);
+            if(isCorrect){
+              clearUI();
+              try { SFX.correct(); } catch(e){}
+              encourage(true, cs.afterMsg, {points: cs.xp});
+              cIdx++;
+              setTimeout(renderTruthCase, 1500);
+            } else {
+              try { SFX.wrong(); } catch(e){}
+              
+              let conTitle = 'Misinformation Spread Hazard!';
+              let conIcon = '📢';
+              let conDesc = 'Believing or forwarding sensational unverified claims causes widespread panic, confusion, and harm.';
+              let lesson = 'Always verify claims using authoritative official sources before believing or sharing.';
+              
+              if(opt.toLowerCase().includes('950,000') || opt.toLowerCase().includes('likes')){
+                conTitle = 'Dangerous Health Myth Accepted!';
+                conIcon = '⚠️';
+                conDesc = 'Viral popularity does not mean medical safety. Believing fake remedies can cause severe physical harm!';
+                lesson = 'Medical and scientific claims must only be verified through qualified doctors and encyclopedia research.';
+              } else if(opt.toLowerCase().includes('forward')){
+                conTitle = 'Panic Spread in Class Chat!';
+                conIcon = '📢';
+                conDesc = 'Forwarding fake holiday rumors misled classmates and disrupted school schedules!';
+                lesson = 'Always verify news directly on official school or government portals.';
+              }
+              
+              showConsequenceModal({
+                title: conTitle,
+                icon: conIcon,
+                consequence: conDesc,
+                lesson: lesson,
+                onRetry: renderTruthCase
+              });
+            }
+          };
+          vBox.appendChild(btn);
         });
-      }, api);
+        
+        addUI(card);
+      };
+      
+      renderTruthCase();
     });
   }
 });
@@ -4109,7 +5241,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch11', title:'The Internet Journey', logtag:'CHAPTER 11',
-  bg1:'#6bbdf2', bg2:'#e6f6ff',
+  bg1:'#0284c7', bg2:'#38bdf8',
   endTitle:'Chapter 11 Complete!',
   learned:[
     'The internet connects our home, our classroom, and the entire globe.',
@@ -4117,39 +5249,67 @@ registerChapter({
     'WE choose how to use it — with kindness, wisdom, and balance.'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0x8fcf8a, 80);
+    addLights(root, 'warm'); ground(root, 0x15803d, 80);
     const stages = [
-      {name:'HOME', z:0, color:0xffe3b0, icon:'🛏️'},
-      {name:'SCHOOL', z:-12, color:0xbfe0ff, icon:'🏫'},
-      {name:'GLOBAL WORLD', z:-24, color:0xd0f0c0, icon:'🌍'}
+      {name:'HOME WIFI', z:2, color:0xffe3b0, icon:'🏠'},
+      {name:'SUBSEA FIBER CABLE', z:-8, color:0x0284c7, icon:'🌊'},
+      {name:'GLOBAL CLOUD HUB', z:-18, color:0x8b5cf6, icon:'☁️'},
+      {name:'SCHOOL CLASSROOM', z:-28, color:0x10b981, icon:'🏫'}
     ];
     stages.forEach(s=>{
       const bld = Props.building(3.2, 2.8, 2.4, s.color, s.icon); bld.position.set(0, 0, s.z); root.add(bld);
-      const lb = makeLabel(s.icon + ' ' + s.name, {scale:0.45, fs:36, bg:'rgba(47,124,224,.95)', fg:'#fff', border:'#fff'});
+      const lb = makeLabel(s.icon + ' ' + s.name, {scale:0.45, fs:36, bg:'rgba(15,23,42,.95)', fg:'#38bdf8', border:'#38bdf8'});
       lb.position.set(0, 3.6, s.z); root.add(lb);
     });
     
-    const {b, g} = bringKids(root, -1.8, 2, 1.8, 2, 0.3);
-    camera.position.set(0, 3.5, 6.8); Cam.look.set(0, 1.4, -4);
+    // Animated glowing packet route line
+    const routeGeom = new T.BufferGeometry().setFromPoints([
+      new T.Vector3(0, 0.4, 2),
+      new T.Vector3(0, 0.4, -8),
+      new T.Vector3(0, 0.4, -18),
+      new T.Vector3(0, 0.4, -28)
+    ]);
+    const routeLine = new T.Line(routeGeom, new T.LineBasicMaterial({color:0x38bdf8, linewidth:3}));
+    root.add(routeLine);
+    
+    const {b, g} = bringKids(root, -1.8, 3.2, 1.8, 3.2, 0.3);
+    camera.position.set(0, 4.0, 8.5); Cam.look.set(0, 1.4, -6);
     
     const introDlg = [
-      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_043.mp3', text:"We’ve come so far! Let’s take one big journey through the whole internet world."},
-      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_044.mp3', text:"From home, to school, to the world — and into the internet itself. Come on!"}
+      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_043.mp3', text:"We’ve come so far! Let’s trace a data packet across the whole global internet journey."},
+      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_044.mp3', text:"From our home router, through under-ocean fiber optic cables, to the global cloud, and back to school!"}
     ];
     
     runDialogue(introDlg, ()=>{
-      api.prompt("🌍 Tap on the Global World building to complete your world journey!");
-      setTimeout(()=>{
+      quizChain([
+        {
+          question: "Global Journey 1: When you send a message from home to a friend across the ocean, how does the data travel physically?",
+          options: [
+            "Through massive fiber-optic cables running across the ocean floor and satellite links",
+            "It travels through thin air without any cables or physical equipment"
+          ],
+          answer: 0, xp: 25,
+          afterMsg: "Undersea fiber optic cables carry over 95% of global internet data at light speed!"
+        },
+        {
+          question: "Global Journey 2: What is our greatest responsibility as global digital citizens?",
+          options: [
+            "Use the internet to create, learn, spread kindness, and balance real life",
+            "Use the internet 24 hours a day to win video game leaderboards"
+          ],
+          answer: 0, xp: 25,
+          afterMsg: "Wisdom, creativity, and kindness make us true internet masters!"
+        }
+      ], ()=>{
         const postDlg = [
-          {who:'girl', expr:'happy', pose:'wave', audio:'audio/girl_045.mp3', text:"The internet gives us SO many possibilities."},
-          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_046.mp3', text:"But we have to decide how we use them — the good stuff, safely."},
-          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_047.mp3', text:"Exactly. Now let’s write down OUR rules to remember it all."}
+          {who:'girl', expr:'happy', pose:'wave', audio:'audio/girl_045.mp3', text:"The internet gives us infinite possibilities to learn and connect."},
+          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_046.mp3', text:"And we have the wisdom to use it safely. Let’s seal our official rulebook!"}
         ];
         runDialogue(postDlg, ()=>{
           addXP(90);
           api.done({msg:"World journey completed! Time to assemble your Internet Rulebook."});
         });
-      }, 3000);
+      }, api);
     });
   }
 });
@@ -4159,7 +5319,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch12', title:'Build Our Internet Rulebook', logtag:'RULEBOOK',
-  bg1:'#ffcf6b', bg2:'#fff3d6',
+  bg1:'#78350f', bg2:'#92400e',
   endTitle:'Chapter 12 Complete!',
   learned:[
     '1. Protect Passwords  2. Balance Screen Time  3. Be Kind Online',
@@ -4167,56 +5327,71 @@ registerChapter({
     '7. Create & Learn Wisely!'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0xe6c98f, 40);
-    const board = box(6.2, 3.6, 0.2, 0x8a5a33); board.position.set(0, 2.6, -4); root.add(board);
-    const cork = box(5.8, 3.2, 0.06, 0xdcc39a); cork.position.set(0, 2.6, -3.88); root.add(cork);
-    const title = makeLabel('⭐ THE 7 INTERNET RULES ⭐', {scale:0.55, fs:44, bg:'rgba(255,124,89,.96)', fg:'#fff', border:'#fff'});
-    title.position.set(0, 4.2, -3.8); root.add(title);
+    addLights(root, 'warm'); ground(root, 0x1e293b, 40);
+    const board = box(6.8, 3.8, 0.2, 0x451a03); board.position.set(0, 2.6, -4); root.add(board);
+    const cork = box(6.4, 3.4, 0.06, 0xc88e4d); cork.position.set(0, 2.6, -3.88); root.add(cork);
+    const title = makeLabel('📜 THE 5 GOLDEN INTERNET COMMANDMENTS 📜', {scale:0.52, fs:40, bg:'rgba(15,23,42,.96)', fg:'#fde047', border:'#fde047'});
+    title.position.set(0, 4.3, -3.8); root.add(title);
     
     const {b, g} = bringKids(root, -2.2, 1.4, 2.2, 1.4, 0.3);
     camera.position.set(0, 3.2, 6.4); Cam.look.set(0, 2.2, -2);
     
     const introDlg = [
-      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_048.mp3', text:"Time to build our rulebook! For each rule, choose the wise ending."},
-      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_049.mp3', text:"And every rule we finish becomes a card on the board. Let’s go!"}
+      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_048.mp3', text:"Time to assemble our official rulebook! For each rule, seal the wise commandment."},
+      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_049.mp3', text:"Every commandment we choose gets engraved onto our classroom board. Let’s go!"}
     ];
     
     runDialogue(introDlg, ()=>{
       quizChain([
         {
-          question: "Rule 1: Password Rule — When creating an account password, always make it...",
-          options: ["❌ 'password123' or your pet\'s name", "✅ Long and strong with mixed symbols, uppercase, lowercase & numbers"],
+          question: "Commandment 1: Master Password Shield — When creating account passwords, always make them...",
+          options: [
+            "'password123' or easy names so you never forget them",
+            "Long & strong with mixed symbols, uppercase, lowercase & numbers"
+          ],
           answer: 1, xp: 20,
-          afterMsg: "Rule 1 Pinned: Strong passwords protect your accounts from being guessed!"
+          afterMsg: "Commandment 1 Pinned: Strong passwords protect accounts from being guessed!"
         },
         {
-          question: "Rule 2: Balance Rule — How should daily screen time be managed?",
-          options: ["✅ Balance recreational screens with outdoor sports, reading & sleep", "❌ Stay on screens as long as possible without breaks"],
+          question: "Commandment 2: Digital Balance Code — How should daily screen time be managed?",
+          options: [
+            "Balance recreational screens with outdoor sports, reading & 8-9 hours of sound sleep",
+            "Stay on screens as long as possible without taking breaks"
+          ],
           answer: 0, xp: 20,
-          afterMsg: "Rule 2 Pinned: True power comes from balance in real life!"
+          afterMsg: "Commandment 2 Pinned: True power comes from balance in real life!"
         },
         {
-          question: "Rule 3: Cyber Kindness Rule — When chatting online with friends and classmates...",
-          options: ["❌ Post mean comments behind anonymous usernames", "✅ Treat others with the same respect and kindness as face-to-face"],
+          question: "Commandment 3: Cyber Kindness Law — When chatting online with friends and classmates...",
+          options: [
+            "Post mean comments or rumors behind anonymous avatars",
+            "Treat others with the same respect and kindness as face-to-face"
+          ],
           answer: 1, xp: 20,
-          afterMsg: "Rule 3 Pinned: Kindness makes the internet a welcoming community for everyone!"
+          afterMsg: "Commandment 3 Pinned: Kindness makes the internet a welcoming community!"
         },
         {
-          question: "Rule 4: Truth Rule — Before sharing a news story or viral rumor with others...",
-          options: ["✅ Fact-check with 2-3 reliable sources to confirm accuracy", "❌ Share it immediately to be the first person to post"],
+          question: "Commandment 4: Truth Detective Rule — Before sharing a news story or viral rumor...",
+          options: [
+            "Fact-check with reliable sources to confirm accuracy before sharing",
+            "Share it immediately to be the first person to post"
+          ],
           answer: 0, xp: 20,
-          afterMsg: "Rule 4 Pinned: Fact-checking stops the spread of misinformation!"
+          afterMsg: "Commandment 4 Pinned: Fact-checking stops the spread of fake news!"
         },
         {
-          question: "Rule 5: Golden Safety Net Rule — Whenever you feel uncomfortable, confused, or worried online...",
-          options: ["❌ Keep it to yourself and hope it goes away", "✅ Tell a trusted parent, guardian, or teacher immediately!"],
+          question: "Commandment 5: Golden Safety Net Rule — Whenever you feel uncomfortable or worried online...",
+          options: [
+            "Keep it a secret and hope the problem goes away on its own",
+            "Tell a trusted parent, guardian, or teacher immediately!"
+          ],
           answer: 1, xp: 25,
-          afterMsg: "Rule 5 Pinned: Trusted adults are your greatest safety net!"
+          afterMsg: "Commandment 5 Pinned: Trusted adults are your greatest safety net!"
         }
       ], ()=>{
         const postDlg = [
-          {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_050.mp3', text:"Our very own rulebook! Seven rules to use the internet smartly."},
-          {who:'girl', expr:'happy', pose:'wave', audio:'audio/girl_051.mp3', text:"And because we built it ourselves, we’ll actually remember it. Ready for the final challenge?"}
+          {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_050.mp3', text:"Our very own rulebook! Five core commandments to use the internet smartly."},
+          {who:'girl', expr:'happy', pose:'wave', audio:'audio/girl_051.mp3', text:"And because we built it ourselves, we’ll remember it forever. Ready for the Grand Arena?"}
         ];
         runDialogue(postDlg, ()=>{
           api.done({msg:"Golden Rulebook Complete! Your 5 Core Internet Commandments are permanently pinned."});
@@ -4227,129 +5402,78 @@ registerChapter({
 });
 
 /* =====================================================================
-   CHAPTER 13: Digital Skills Arcade (Password & Kindness Arena)
-   ===================================================================== */
-registerChapter({
-  id:'ch_arcade', title:'Digital Skills Arcade', logtag:'ARCADE',
-  bg1:'#6db0ef', bg2:'#e6f0ff',
-  endTitle:'Chapter 13 Complete!',
-  learned:[
-    'Strong passwords protect your gaming and school accounts.',
-    'Words matter: treat others online with empathy and kindness.',
-    'Report bullying and stand up for friends safely.'
-  ],
-  build(root, api){
-    addLights(root, 'warm');
-    const floor = box(12, 0.2, 10, 0xe7eefb); floor.position.y = -0.1; floor.receiveShadow = true; root.add(floor);
-    const backWall = box(12, 5, 0.2, 0xdcecff); backWall.position.set(0, 2.4, -4.2); root.add(backWall);
-    const sign = makeLabel('🎮 DIGITAL SKILLS ARCADE', {scale:0.65, fs:44, bg:'rgba(47,124,224,.95)', fg:'#fff', border:'#fff'});
-    sign.position.set(0, 4.2, -4); root.add(sign);
-    
-    const {b, g} = bringKids(root, -1.8, 1.4, 1.8, 1.4, 0.3);
-    camera.position.set(0, 3.2, 6.2); Cam.look.set(0, 1.6, -1);
-    
-    const introDlg = [
-      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_052.mp3', text:"An arcade! But these games teach real internet skills. First up — building a strong password!"},
-      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_053.mp3', text:"Let’s forge one so strong no one can guess it. Then we’ll practise being kind online."}
-    ];
-    
-    runDialogue(introDlg, ()=>{
-      quizChain([
-        {
-          question: "Arcade Skill 1: Password Strength Forge — Which of these passwords is practically unhackable?",
-          options: ["❌ SoccerPlayer2024", "✅ Blue$Ocean#98Rocket!"],
-          answer: 1, xp: 25,
-          afterMsg: "Passphrases with mixed symbols and capital letters take centuries to crack!"
-        },
-        {
-          question: "Arcade Skill 2: Cyber Kindness Boss — A classmate makes an incorrect answer in an online quiz. What is the winning move?",
-          options: ["❌ Spam laughing emojis in the public chat", "✅ Send an encouraging word or helpful tip privately"],
-          answer: 1, xp: 25,
-          afterMsg: "True internet champions lift others up instead of knocking them down!"
-        },
-        {
-          question: "Arcade Skill 3: Upstander Shield — You see another student being teased in a shared game channel. What do you do?",
-          options: ["✅ Stand up for them, report the behavior, and tell a teacher", "❌ Stay silent and watch — it is not your problem"],
-          answer: 0, xp: 25,
-          afterMsg: "Being an active upstander protects everyone in the online community!"
-        },
-        {
-          question: "Arcade Skill 4: Two-Factor Guard — What does 2-Factor Authentication (2FA) do for your accounts?",
-          options: ["✅ Adds a second secret verification code to block unauthorized logins", "❌ Makes your password public to everyone"],
-          answer: 0, xp: 25,
-          afterMsg: "2FA is the ultimate security armor for your digital accounts!"
-        }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_054.mp3', text:"Strong password AND kind words. I feel like a real internet pro now!"},
-          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_055.mp3', text:"That’s what being Internet Smart means — safe, thoughtful and kind. One challenge left!"}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Arcade High Score! You mastered password forging, 2FA, and cyber kindness."});
-        });
-      }, api);
-    });
-  }
-});
-
-/* =====================================================================
-   CHAPTER 14: Final Challenge Arena (Certification Quest)
+   CHAPTER 13: Final Challenge Arena (Live Cyber Defense Mastery)
    ===================================================================== */
 registerChapter({
   id:'ch13', title:'Final Challenge Arena', logtag:'FINAL',
-  bg1:'#67b6f2', bg2:'#e6f2ff',
+  bg1:'#0f172a', bg2:'#1e1b4b',
   endTitle:'Congratulations!',
   learned:[
-    'You mastered all 14 chapters of Internet Smart Adventure!',
+    'You mastered all chapters of Internet Smart Adventure!',
     'You know how the web works, how to balance screen time, and stay safe.',
     'You are ready to explore the world with confidence and wisdom!'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0x9ec6ea, 40);
-    const ring = new T.Mesh(new T.TorusGeometry(4, 0.2, 12, 40), mat(0xffcf49));
+    addLights(root, 'warm'); ground(root, 0x0f172a, 40);
+    const ring = new T.Mesh(new T.TorusGeometry(4, 0.2, 12, 40), mat(0xffcf49, {emissive:0xf59e0b, emissiveIntensity:0.6}));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; root.add(ring);
     
-    const trophyPod = Props.pedestal(2, 0.8, 2, 0xffffff); trophyPod.position.set(0, 0, -1); root.add(trophyPod);
-    const trophyStar = sph(0.4, 0xffd166, {emissive:0xffd166, emissiveIntensity:0.6});
-    trophyStar.position.set(0, 1.4, -1); root.add(trophyStar);
+    const trophyPod = Props.pedestal(2.2, 0.9, 2.2, 0x1e293b); trophyPod.position.set(0, 0, -1); root.add(trophyPod);
+    const trophyStar = sph(0.45, 0xffd166, {emissive:0xffd166, emissiveIntensity:0.8});
+    trophyStar.position.set(0, 1.5, -1); root.add(trophyStar);
     
     const {b, g} = bringKids(root, -1.8, 1.4, 1.8, 1.4, 0.3);
     camera.position.set(0, 3.2, 6.4); Cam.look.set(0, 1.4, -1);
     
     const introDlg = [
-      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_056.mp3', text:"This is it — the Final Challenge! Ten real internet moments, back to back."},
-      {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_057.mp3', text:"React quickly and wisely. Let’s show what we learned!"}
+      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_056.mp3', text:"This is it — the Final Challenge! Real internet moments back to back."},
+      {who:'boy', expr:'excited', pose:'cheer', audio:'audio/boy_057.mp3', text:"React with your digital superpowers. Let’s show what we learned!"}
     ];
     
     runDialogue(introDlg, ()=>{
       quizChain([
         {
-          question: "Grand Arena 1: What makes the internet such an extraordinary superpower when used wisely?",
-          options: ["✅ Access to infinite knowledge, creative arts, and global science", "❌ Playing video games 10 hours a day without sleeping"],
+          question: "Grand Arena 1: What makes the internet an extraordinary superpower when used wisely?",
+          options: [
+            "Access to infinite global knowledge, creative arts, and worldwide science",
+            "Playing video games 10 hours a day without sleeping or eating"
+          ],
           answer: 0, xp: 30,
           afterMsg: "Knowledge and creative creation are the true superpowers of the digital age!"
         },
         {
           question: "Grand Arena 2: A suspicious pop-up claims your computer won a massive cash prize. What is your reaction?",
-          options: ["❌ Click the link immediately and provide bank details", "✅ Close the window — it is a classic scam"],
+          options: [
+            "Click the link immediately and provide bank details to get the prize",
+            "Close the window — you cannot win contests you never entered"
+          ],
           answer: 1, xp: 30,
           afterMsg: "Scams defused effortlessly with your sharp critical thinking!"
         },
         {
-          question: "Grand Arena 3: Why is moderation and the 20-20-20 rule important during computer work?",
-          options: ["✅ It protects your eyes, brain focus, physical posture, and sound sleep", "❌ It is not important — screens never cause tiredness"],
+          question: "Grand Arena 3: Why is moderation and the 20-20-20 rule essential during digital screen time?",
+          options: [
+            "It protects your eyes, posture, brain focus, and healthy sleep",
+            "It is not necessary because screens never cause fatigue"
+          ],
           answer: 0, xp: 30,
           afterMsg: "Physical well-being and sound sleep keep your real-world superpowers charged!"
         },
         {
-          question: "Grand Arena 4: A stranger online asks you to keep a conversation secret from your parents. What do you do?",
-          options: ["✅ Tell your parents or teacher immediately — secrets with strangers are a major safety red flag", "❌ Keep the secret so you don\'t get in trouble"],
+          question: "Grand Arena 4: An unknown gamer online asks you to keep a conversation secret from your parents. What do you do?",
+          options: [
+            "Tell your parents or teacher immediately — secrets with strangers are a major safety hazard",
+            "Keep the secret so you don't get in trouble"
+          ],
           answer: 0, xp: 30,
           afterMsg: "Never keep online secrets with strangers — trusted adults always protect you!"
         },
         {
-          question: "Final Mastery Question: What is THE #1 Golden Rule of the entire Internet Smart Explorer code?",
-          options: ["❌ Click everything fast before anyone notices", "✅ Stop, Think, and Check with a trusted parent or teacher!"],
+          question: "Final Mastery Rule: What is THE #1 Golden Rule of the entire Internet Smart Explorer code?",
+          options: [
+            "Click everything fast before anyone notices",
+            "Stop, Think, and Check with a trusted parent or teacher!"
+          ],
           answer: 1, xp: 50,
           afterMsg: "🏆 CONGRATULATIONS! You have mastered the entire Internet Smart curriculum!"
         }
@@ -4357,7 +5481,7 @@ registerChapter({
         SFX.badge();
         addXP(100);
         api.done({
-          msg:"Incredible achievement! You mastered all 14 chapters of Internet Smart Adventure and unlocked your Official Digital Explorer Certificate!"
+          msg:"Incredible achievement! You mastered the entire Internet Smart Adventure and unlocked your Official Digital Explorer Certificate!"
         });
       }, api);
     });

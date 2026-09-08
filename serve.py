@@ -10,7 +10,15 @@ class NoCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         super().end_headers()
 
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
 if __name__ == '__main__':
-    with socketserver.TCPServer(("", PORT), NoCacheHTTPRequestHandler) as httpd:
-        print(f"Serving at http://localhost:{PORT} with Cache-Control disabled")
-        httpd.serve_forever()
+    # Allow address reuse to prevent 'Address already in use' errors
+    socketserver.TCPServer.allow_reuse_address = True
+    with ThreadingHTTPServer(("", PORT), NoCacheHTTPRequestHandler) as httpd:
+        print(f"Serving at http://localhost:{PORT} (Multi-threaded, Zero-cache)")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            httpd.server_close()
