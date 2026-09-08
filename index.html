@@ -482,6 +482,107 @@ function twoShot(bx,bz,gx,gz){
    voices. Data-driven so pre-generated ElevenLabs clips (line.audio) drop
    straight in; falls back to the browser's built-in speech (offline, no key).
    ===================================================================== */
+
+/* =====================================================================
+   BACKGROUND MUSIC SYSTEM (Continuous loop with dialogue auto-ducking)
+   Normal volume: 40% (0.40) | Dialogue active volume: 10% (0.10)
+   ===================================================================== */
+const BGM = {
+  audio: null,
+  enabled: true,
+  baseVol: 0.40,
+  duckVol: 0.10,
+  targetVol: 0.40,
+  fadeTimer: null,
+  isDucked: false,
+  hasStarted: false,
+
+  init(){
+    if(this.audio) return;
+    try {
+      this.audio = new Audio('audio/Soft Game Bgm.mp3');
+      this.audio.loop = true;
+      this.audio.volume = this.baseVol;
+      this.audio.preload = 'auto';
+    } catch(e) {
+      console.warn('BGM init error:', e);
+    }
+  },
+
+  start(){
+    this.init();
+    if(!this.audio || this.hasStarted) return;
+    if(State.muted) return;
+    
+    this.hasStarted = true;
+    this.targetVol = this.isDucked ? this.duckVol : this.baseVol;
+    this.audio.volume = this.targetVol;
+    
+    const playPromise = this.audio.play();
+    if(playPromise !== undefined){
+      playPromise.catch(err => {
+        // Autoplay policy prevented immediate playback; wait for user gesture
+        const unlock = () => {
+          if(!State.muted && this.hasStarted && this.audio){
+            this.audio.play().catch(()=>{});
+          }
+          window.removeEventListener('click', unlock);
+          window.removeEventListener('keydown', unlock);
+          window.removeEventListener('touchstart', unlock);
+        };
+        window.addEventListener('click', unlock);
+        window.addEventListener('keydown', unlock);
+        window.addEventListener('touchstart', unlock);
+      });
+    }
+  },
+
+  stop(){
+    if(this.audio){
+      try { this.audio.pause(); } catch(e){}
+    }
+    this.hasStarted = false;
+  },
+
+  setMuted(muted){
+    if(!this.audio) this.init();
+    if(muted){
+      if(this.audio) this.audio.volume = 0;
+    } else {
+      this.start();
+      this.fadeTo(this.isDucked ? this.duckVol : this.baseVol, 200);
+    }
+  },
+
+  duck(active){
+    this.isDucked = active;
+    this.init();
+    if(State.muted || !this.audio) return;
+    const target = active ? this.duckVol : this.baseVol;
+    this.fadeTo(target, 350);
+  },
+
+  fadeTo(destVol, durationMs){
+    if(!this.audio) return;
+    if(State.muted){ this.audio.volume = 0; return; }
+    clearInterval(this.fadeTimer);
+    const startVol = this.audio.volume;
+    const startTime = performance.now();
+    
+    this.fadeTimer = setInterval(() => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      // Smooth linear interpolation
+      this.audio.volume = Math.max(0, Math.min(1, startVol + (destVol - startVol) * progress));
+      if(progress >= 1){
+        clearInterval(this.fadeTimer);
+      }
+    }, 25);
+  }
+};
+window.BGM = BGM;
+try { BGM.init(); } catch(e){}
+
 const Voice={
   avail:false, enabled:true, vol:1.0, boyV:null, girlV:null, _t:null, _cur:null, _fired:false,
   init(){
@@ -500,8 +601,9 @@ const Voice={
   // estimate speaking time so the flow never stalls even if onend never fires (e.g. headless)
   _estimate(t){ return Math.min(9000, 900 + t.length*55); },
   speak(role, text, audioUrl, onEnd){
+    BGM.duck(true);
     this.stop(); this._fired=false;
-    const done=()=>{ if(this._fired)return; this._fired=true; if(onEnd)onEnd(); };
+    const done=()=>{ if(this._fired)return; this._fired=true; BGM.duck(false); if(onEnd)onEnd(); };
     if(State.muted || !this.enabled){ this._t=setTimeout(done, Math.min(3200, this._estimate(text))); return; }
     // 1) Preferred: a pre-generated (e.g. ElevenLabs) clip supplied per line.
     if(audioUrl){ try{ const a=new Audio(audioUrl); a.volume=this.vol; this._cur=a;
@@ -515,7 +617,7 @@ const Voice={
     // If a clip can't load, advance silently on a timed estimate so the flow never stalls.
     this._t=setTimeout(done, this._estimate(text));
   },
-  stop(){ clearTimeout(this._t); try{ if(this.avail)speechSynthesis.cancel(); }catch(e){}
+  stop(){ clearTimeout(this._t); BGM.duck(false); try{ if(this.avail)speechSynthesis.cancel(); }catch(e){}
     if(this._cur&&this._cur.pause){ try{this._cur.pause();}catch(e){} } this._cur=null; }
 };
 
@@ -1016,7 +1118,7 @@ function nextLine(){
     if(_dlg===D && D.i===myIdx){ setTimeout(()=>{ if(_dlg===D && D.i===myIdx) nextLine(); }, 480); }
   });
 }
-function endDialogue(){ const D=_dlg; if(!D)return; clearInterval(D.typer); Voice.stop();
+function endDialogue(){ const D=_dlg; if(!D)return; clearInterval(D.typer); Voice.stop(); BGM.duck(false);
   Chars.list.forEach(c=>{ c.talk=false; c.lookTarget=null; drawFace(c,c.expr); });
   document.getElementById('dialogue').classList.remove('show');
   const cb=D.onEnd; _dlg=null; if(cb)cb();
@@ -3241,6 +3343,7 @@ registerChapter({
 });
 /* ================= BOOT ================= */
 function boot(){
+  try { BGM.init(); } catch(e){}
   initEngine();
   
   // Hide loader
@@ -3297,7 +3400,7 @@ function boot(){
       State.muted = !State.muted;
       btnMute.textContent = State.muted ? '🔇' : '🔊';
       btnMute.classList.toggle('on', State.muted);
-      if(State.muted){ Voice.stop(); }
+      if(State.muted){ Voice.stop(); BGM.setMuted(true); } else { BGM.setMuted(false); }
       toast(State.muted ? 'Sound muted' : 'Sound unmuted');
     };
   }
