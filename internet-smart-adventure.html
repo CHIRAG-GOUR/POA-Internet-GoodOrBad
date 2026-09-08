@@ -870,6 +870,10 @@ function pointerToScene(clientX,clientY){
 function bindPointer(){
   const handler=(e)=>{
     if(State.paused) return;
+    // Never trigger 3D world raycast picking when interacting with HTML UI buttons/cards/dialogues
+    if(e.target && e.target.closest('#uiLayer, .panel, #dialogue, #hud, #encBox, #toast, button, input, .card, .start-btn, .pill-btn, .building-modal, .inspection-hud')){
+      return;
+    }
     const p=(e.touches&&e.touches[0])||e;
     pointerToScene(p.clientX, p.clientY);
   };
@@ -1945,43 +1949,43 @@ registerChapter({
   ],
   build(root, api){
     addLights(root, 'warm');
-    ground(root, 0x88cf82, 65, {scapeOpts:{hill:0x7ec88c, hill2:0x68bc7e, clouds:8}});
+    ground(root, 0x88cf82, 70, {scapeOpts:{hill:0x7ec88c, hill2:0x68bc7e, clouds:8}});
 
-    // Grand City Plaza Flooring with geometric paving patterns
-    const plaza = new T.Mesh(new T.CircleGeometry(9.5, 48), new T.MeshStandardMaterial({color:0xd8e2ed, roughness:0.9}));
+    // Grand City Plaza Flooring
+    const plaza = new T.Mesh(new T.CircleGeometry(10.5, 48), new T.MeshStandardMaterial({color:0xd8e2ed, roughness:0.9}));
     plaza.rotation.x = -Math.PI/2; plaza.position.y = 0.02; plaza.receiveShadow = true; root.add(plaza);
     
-    // Inner decorative fountain plaza ring
-    const innerRing = new T.Mesh(new T.RingGeometry(1.4, 1.8, 32), new T.MeshStandardMaterial({color:0x3b82f6, metalness:0.4, roughness:0.3}));
+    // Fountain plaza ring
+    const innerRing = new T.Mesh(new T.RingGeometry(1.4, 1.9, 32), new T.MeshStandardMaterial({color:0x3b82f6, metalness:0.4, roughness:0.3}));
     innerRing.rotation.x = -Math.PI/2; innerRing.position.y = 0.03; root.add(innerRing);
     
     // Central digital fountain beacon
-    const fBase = cyl(0.8, 1.0, 0.35, 0xffffff, 24); fBase.position.set(0, 0.18, 0.4); root.add(fBase);
-    const fWater = cyl(0.72, 0.72, 0.3, 0x38bdf8, 24); fWater.position.set(0, 0.22, 0.4); root.add(fWater);
+    const fBase = cyl(0.85, 1.05, 0.35, 0xffffff, 24); fBase.position.set(0, 0.18, 0.4); root.add(fBase);
+    const fWater = cyl(0.75, 0.75, 0.3, 0x38bdf8, 24); fWater.position.set(0, 0.22, 0.4); root.add(fWater);
     const fSpire = cyl(0.05, 0.12, 1.6, 0xdbeafe, 16); fSpire.position.set(0, 0.95, 0.4); root.add(fSpire);
-    const fGem = sph(0.22, 0x60a5fa, {emissive:0x3b82f6, emissiveIntensity:0.8}); fGem.position.set(0, 1.85, 0.4); root.add(fGem);
+    const fGem = sph(0.24, 0x60a5fa, {emissive:0x3b82f6, emissiveIntensity:0.85}); fGem.position.set(0, 1.85, 0.4); root.add(fGem);
     onFrame((dt, t) => {
       fGem.position.y = 1.85 + Math.sin(t * 3) * 0.06;
       fGem.rotation.y = t * 1.5;
     });
 
     // Plaza main road
-    const road = box(24, 0.04, 2.6, 0x475569); road.position.set(0, 0.03, 4.2); root.add(road);
-    for(let i = -11; i <= 11; i += 1.8){
+    const road = box(26, 0.04, 2.6, 0x475569); road.position.set(0, 0.03, 4.2); root.add(road);
+    for(let i = -12; i <= 12; i += 1.8){
       const dash = box(0.8, 0.05, 0.14, 0xfacc15); dash.position.set(i, 0.06, 4.2); root.add(dash);
     }
     
     // Distant futuristic skyscraper skyline
     const skyCols = [0x64748b, 0x475569, 0x60a5fa, 0x3b82f6, 0x93c5fd];
-    for(let i = 0; i < 18; i++){
-      const h = 3.2 + Math.random() * 4.2, w = 1.1 + Math.random() * 0.8;
+    for(let i = 0; i < 20; i++){
+      const h = 3.4 + Math.random() * 4.5, w = 1.1 + Math.random() * 0.8;
       const tw = box(w, h, w, skyCols[i % skyCols.length]);
-      tw.position.set(-14 + i * 1.65, h/2, -8.0 - Math.random() * 2.5);
+      tw.position.set(-15 + i * 1.6, h/2, -8.5 - Math.random() * 2.5);
       root.add(tw);
       const wm = new T.MeshStandardMaterial({color:0xfffbeb, emissive:0xfde047, emissiveIntensity:0.6, roughness:0.3});
       for(let yy = 0.6; yy < h - 0.4; yy += 0.55){
         const win = new T.Mesh(new T.BoxGeometry(w * 0.72, 0.22, 0.03), wm);
-        win.position.set(-14 + i * 1.65, yy, -8.0 - Math.random() * 2.5 + w/2);
+        win.position.set(-15 + i * 1.6, yy, -8.5 - Math.random() * 2.5 + w/2);
         root.add(win);
       }
     }
@@ -1989,284 +1993,488 @@ registerChapter({
     // Street lamps and trees
     for(let s = -1; s <= 1; s += 2){
       for(let k = 0; k < 3; k++){
-        const lx = s * 6.8, lz = -0.5 + k * 2.0;
+        const lx = s * 7.2, lz = -0.5 + k * 2.0;
         const post = cyl(0.06, 0.08, 2.4, 0x334155, 12); post.position.set(lx, 1.2, lz); root.add(post);
         const arm = box(0.5, 0.06, 0.06, 0x334155); arm.position.set(lx - s * 0.22, 2.35, lz); root.add(arm);
         const lamp = sph(0.14, 0xfef08a, {emissive:0xfef08a, emissiveIntensity:0.9}); lamp.position.set(lx - s * 0.42, 2.3, lz); root.add(lamp);
       }
     }
-    for(let i = 0; i < 8; i++){
+    for(let i = 0; i < 9; i++){
       const tr = Props.tree([0x22c55e, 0x16a34a, 0x15803d][i % 3]);
-      tr.scale.setScalar(0.8 + Math.random() * 0.3);
-      const a = (i / 8) * Math.PI * 2;
-      tr.position.set(Math.cos(a) * 7.8, 0, Math.sin(a) * 3.6 - 1.2);
+      tr.scale.setScalar(0.85 + Math.random() * 0.3);
+      const a = (i / 9) * Math.PI * 2;
+      tr.position.set(Math.cos(a) * 8.2, 0, Math.sin(a) * 3.8 - 1.2);
       root.add(tr);
     }
 
     // ===================================================================
-    // DETAILED 3D BUILDINGS (OPEN-FRONT EXHIBIT SHOWCASES)
+    // 1. NATURAL HISTORY & SCIENCE MUSEUM (High-Fidelity 3D Dinosaur Fossil)
     // ===================================================================
-
-    // 1. NATURAL HISTORY & SCIENCE MUSEUM (With full 3D Dinosaur Skeleton!)
     function createMuseum(parent, x, z){
       const g = new T.Group(); g.position.set(x, 0, z);
       
-      const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
-      const backWall = box(2.6, 2.8, 0.15, 0x0284c7); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
-      const leftWall = box(0.15, 2.8, 2.2, 0x0369a1); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
-      const rightWall = box(0.15, 2.8, 2.2, 0x0369a1); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
-      const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
+      const floor = box(2.8, 0.2, 2.4, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
+      const backWall = box(2.8, 2.9, 0.15, 0x0284c7); backWall.position.set(0, 1.55, -1.15); g.add(backWall);
+      const leftWall = box(0.15, 2.9, 2.4, 0x0369a1); leftWall.position.set(-1.35, 1.55, 0); g.add(leftWall);
+      const rightWall = box(0.15, 2.9, 2.4, 0x0369a1); rightWall.position.set(1.35, 1.55, 0); g.add(rightWall);
+      const roof = box(3.0, 0.16, 2.6, 0xffffff); roof.position.set(0, 3.05, 0); g.add(roof);
       
-      const ped = new T.Mesh(new T.ConeGeometry(1.6, 0.7, 4), new T.MeshStandardMaterial({color:0x0284c7, roughness:0.4}));
-      ped.rotation.y = Math.PI/4; ped.position.set(0, 3.4, 0); g.add(ped);
+      const ped = new T.Mesh(new T.ConeGeometry(1.7, 0.75, 4), new T.MeshStandardMaterial({color:0x0284c7, roughness:0.4}));
+      ped.rotation.y = Math.PI/4; ped.position.set(0, 3.5, 0); g.add(ped);
       
       const colMat = new T.MeshStandardMaterial({color:0xffffff, roughness:0.4});
-      [-1.15, 1.15].forEach(cx => {
-        const pillar = new T.Mesh(new T.CylinderGeometry(0.08, 0.09, 2.7, 16), colMat);
-        pillar.position.set(cx, 1.45, 1.05); g.add(pillar);
+      [-1.25, 1.25].forEach(cx => {
+        const pillar = new T.Mesh(new T.CylinderGeometry(0.08, 0.09, 2.8, 16), colMat);
+        pillar.position.set(cx, 1.5, 1.15); g.add(pillar);
       });
 
-      // --- 3D DINOSAUR SKELETON (T-REX FOSSIL EXHIBIT) ---
-      const dino = new T.Group();
-      dino.position.set(0, 0.2, 0.1);
-      g.add(dino);
+      // --- 3D DINOSAUR SKELETON FOSSIL ---
+      const dino = new T.Group(); dino.position.set(0, 0.2, 0.1); g.add(dino);
+      const boneMat = new T.MeshStandardMaterial({color:0xfffaed, roughness:0.4, metalness:0.08});
       
-      const boneMat = new T.MeshStandardMaterial({color:0xfef3c7, roughness:0.5, metalness:0.1});
-      
-      const plinth = box(1.7, 0.16, 0.9, 0x0f172a); plinth.position.set(0, 0.08, 0); dino.add(plinth);
-      const plaque = box(0.4, 0.05, 0.02, 0xf59e0b); plaque.position.set(0, 0.1, 0.46); dino.add(plaque);
+      // Plinth & Gold Plaque
+      const plinth = box(1.85, 0.18, 1.05, 0x0f172a); plinth.position.set(0, 0.09, 0); dino.add(plinth);
+      const plaque = box(0.65, 0.08, 0.02, 0xd4af37); plaque.position.set(0, 0.12, 0.54); dino.add(plaque);
 
-      const skull = box(0.32, 0.22, 0.42, 0xfef3c7); skull.position.set(-0.6, 1.18, 0.0); dino.add(skull);
-      const snout = box(0.24, 0.15, 0.32, 0xfde68a); snout.position.set(-0.84, 1.13, 0.0); dino.add(snout);
-      const lowerJaw = box(0.22, 0.07, 0.28, 0xfef3c7); lowerJaw.position.set(-0.78, 0.99, 0.0); dino.add(lowerJaw);
-      const eyeL = sph(0.05, 0x0f172a); eyeL.position.set(-0.62, 1.22, 0.16); dino.add(eyeL);
-      const eyeR = sph(0.05, 0x0f172a); eyeR.position.set(-0.62, 1.22, -0.16); dino.add(eyeR);
+      // Skull & Jaws with sharp teeth
+      const skull = box(0.36, 0.26, 0.44, 0xfffaed); skull.position.set(-0.65, 1.22, 0.0); dino.add(skull);
+      const snout = box(0.28, 0.18, 0.34, 0xfef08a); snout.position.set(-0.94, 1.16, 0.0); dino.add(snout);
+      const lowerJaw = box(0.26, 0.08, 0.3, 0xfffaed); lowerJaw.position.set(-0.86, 1.0, 0.0); dino.add(lowerJaw);
       
-      for(let v = 0; v < 7; v++){
-        const vx = -0.4 + v * 0.15;
-        const vy = 1.12 - Math.sin((v/6)*Math.PI) * 0.14;
-        const vert = new T.Mesh(new T.BoxGeometry(0.11, 0.13, 0.11), boneMat);
-        vert.position.set(vx, vy, 0); dino.add(vert);
-        const spineDorsal = new T.Mesh(new T.BoxGeometry(0.03, 0.09, 0.03), boneMat);
-        spineDorsal.position.set(vx, vy + 0.09, 0); dino.add(spineDorsal);
+      // Eye sockets
+      const eyeL = sph(0.06, 0x0f172a); eyeL.position.set(-0.68, 1.26, 0.18); dino.add(eyeL);
+      const eyeR = sph(0.06, 0x0f172a); eyeR.position.set(-0.68, 1.26, -0.18); dino.add(eyeR);
+      
+      // Teeth
+      for(let t = 0; t < 6; t++){
+        const tooth = new T.Mesh(new T.ConeGeometry(0.02, 0.06, 4), new T.MeshStandardMaterial({color:0xffffff}));
+        tooth.rotation.x = Math.PI; tooth.position.set(-0.76 - t * 0.06, 1.06, 0.12); dino.add(tooth);
+        const tooth2 = tooth.clone(); tooth2.position.z = -0.12; dino.add(tooth2);
       }
 
-      for(let r = 0; r < 4; r++){
-        const rx = -0.25 + r * 0.14;
+      // Vertebrae & Spine
+      for(let v = 0; v < 8; v++){
+        const vx = -0.42 + v * 0.15;
+        const vy = 1.15 - Math.sin((v/7)*Math.PI) * 0.15;
+        const vert = new T.Mesh(new T.BoxGeometry(0.12, 0.14, 0.12), boneMat);
+        vert.position.set(vx, vy, 0); dino.add(vert);
+        const spineDorsal = new T.Mesh(new T.BoxGeometry(0.03, 0.1, 0.03), boneMat);
+        spineDorsal.position.set(vx, vy + 0.1, 0); dino.add(spineDorsal);
+      }
+
+      // Rib Cage
+      for(let r = 0; r < 5; r++){
+        const rx = -0.28 + r * 0.14;
         [-1, 1].forEach(side => {
-          const rib = new T.Mesh(new T.TorusGeometry(0.17, 0.02, 6, 12, Math.PI * 0.75), boneMat);
+          const rib = new T.Mesh(new T.TorusGeometry(0.19, 0.022, 6, 12, Math.PI * 0.75), boneMat);
           rib.rotation.y = side * Math.PI / 2;
           rib.rotation.z = side * 0.35;
-          rib.position.set(rx, 0.98, side * 0.08);
+          rib.position.set(rx, 1.02, side * 0.09);
           dino.add(rib);
         });
       }
 
-      [-0.13, 0.13].forEach(side => {
-        const femur = cyl(0.038, 0.042, 0.42, 0xfef3c7, 8);
-        femur.position.set(0.12, 0.78, side); femur.rotation.z = 0.22; dino.add(femur);
-        const tibia = cyl(0.032, 0.032, 0.42, 0xfef3c7, 8);
-        tibia.position.set(0.2, 0.4, side); tibia.rotation.z = -0.16; dino.add(tibia);
-        const foot = box(0.18, 0.04, 0.09, 0xfef3c7);
-        foot.position.set(0.15, 0.18, side); dino.add(foot);
+      // Hind Legs & Feet
+      [-0.15, 0.15].forEach(side => {
+        const femur = cyl(0.04, 0.045, 0.45, 0xfffaed, 8);
+        femur.position.set(0.14, 0.8, side); femur.rotation.z = 0.22; dino.add(femur);
+        const tibia = cyl(0.035, 0.035, 0.45, 0xfffaed, 8);
+        tibia.position.set(0.22, 0.42, side); tibia.rotation.z = -0.16; dino.add(tibia);
+        const foot = box(0.2, 0.05, 0.1, 0xfffaed);
+        foot.position.set(0.16, 0.2, side); dino.add(foot);
+        // Claws
+        for(let c = 0; c < 3; c++){
+          const claw = new T.Mesh(new T.ConeGeometry(0.015, 0.05, 4), boneMat);
+          claw.rotation.z = -Math.PI / 2;
+          claw.position.set(0.28, 0.2, side - 0.03 + c * 0.03); dino.add(claw);
+        }
       });
 
-      [-0.1, 0.1].forEach(side => {
-        const arm = cyl(0.02, 0.02, 0.18, 0xfef3c7, 6);
-        arm.position.set(-0.35, 0.88, side * 1.3); arm.rotation.z = -0.6; dino.add(arm);
+      // Forelimb Arms
+      [-0.12, 0.12].forEach(side => {
+        const arm = cyl(0.022, 0.022, 0.2, 0xfffaed, 6);
+        arm.position.set(-0.38, 0.9, side * 1.3); arm.rotation.z = -0.6; dino.add(arm);
       });
 
-      for(let t = 0; t < 6; t++){
-        const tx = 0.65 + t * 0.13;
-        const ty = 0.92 - t * 0.07;
-        const tvert = new T.Mesh(new T.BoxGeometry(0.09 - t*0.01, 0.07 - t*0.008, 0.07 - t*0.008), boneMat);
+      // Tail
+      for(let t = 0; t < 7; t++){
+        const tx = 0.7 + t * 0.13;
+        const ty = 0.94 - t * 0.08;
+        const tvert = new T.Mesh(new T.BoxGeometry(0.1 - t*0.01, 0.08 - t*0.008, 0.08 - t*0.008), boneMat);
         tvert.position.set(tx, ty, 0); dino.add(tvert);
       }
 
-      const spot = sph(0.1, 0xffedd5, {emissive:0xffedd5, emissiveIntensity:1.0});
-      spot.position.set(0, 2.5, 0.3); dino.add(spot);
+      // Red Velvet Rope Stanchions
+      const stanchionMat = new T.MeshStandardMaterial({color:0xd4af37, metalness:0.8, roughness:0.2});
+      const ropeMat = new T.MeshStandardMaterial({color:0x991b1b, roughness:0.5});
+      [[-0.9, 0.7], [0.9, 0.7]].forEach(([sx, sz]) => {
+        const post = new T.Mesh(new T.CylinderGeometry(0.03, 0.04, 0.65, 12), stanchionMat);
+        post.position.set(sx, 0.35, sz); dino.add(post);
+        const ball = new T.Mesh(new T.SphereGeometry(0.06, 12, 12), stanchionMat);
+        ball.position.set(sx, 0.68, sz); dino.add(ball);
+      });
+      const rope = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([
+        new T.Vector3(-0.9, 0.62, 0.7), new T.Vector3(0, 0.5, 0.72), new T.Vector3(0.9, 0.62, 0.7)
+      ]), 20, 0.02, 8, false), ropeMat);
+      dino.add(rope);
+
+      // Museum Spotlight
+      const spot = sph(0.12, 0xffedd5, {emissive:0xffedd5, emissiveIntensity:1.0});
+      spot.position.set(0, 2.65, 0.3); dino.add(spot);
 
       const lbl = makeLabel('🏛️ Science Museum', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#0284c7'});
+      lbl.position.set(0, 4.0, 0); g.add(lbl);
+
+      parent.add(g);
+      return g;
+    }
+
+    // ===================================================================
+    // 2. GRAND LIBRARY (Real Readable Book Spines on Shelves & Study Desk)
+    // ===================================================================
+    function createLibrary(parent, x, z){
+      const g = new T.Group(); g.position.set(x, 0, z);
+      
+      const floor = box(2.8, 0.2, 2.4, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
+      const backWall = box(2.8, 2.9, 0.15, 0x1e3a8a); backWall.position.set(0, 1.55, -1.15); g.add(backWall);
+      const leftWall = box(0.15, 2.9, 2.4, 0x1d4ed8); leftWall.position.set(-1.35, 1.55, 0); g.add(leftWall);
+      const rightWall = box(0.15, 2.9, 2.4, 0x1d4ed8); rightWall.position.set(1.35, 1.55, 0); g.add(rightWall);
+      const roof = box(3.0, 0.16, 2.6, 0xffffff); roof.position.set(0, 3.05, 0); g.add(roof);
+
+      const shelfMat = new T.MeshStandardMaterial({color:0x451a03, roughness:0.6});
+      
+      // Helper to generate dynamic book spine texture with crisp readable text
+      function createBookSpineCanvas(title, author, bgHex, textHex){
+        const cv = document.createElement('canvas'); cv.width = 128; cv.height = 384;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = bgHex; ctx.fillRect(0, 0, cv.width, cv.height);
+        
+        // Gold foil bands
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(0, 16, cv.width, 8);
+        ctx.fillRect(0, cv.height - 24, cv.width, 8);
+        
+        // Title text rotated 90 deg along spine
+        ctx.save();
+        ctx.translate(cv.width / 2, cv.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = textHex || '#ffffff';
+        ctx.font = 'bold 22px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title.substring(0, 24), 0, -8);
+        ctx.font = 'italic 15px system-ui, sans-serif';
+        ctx.fillStyle = '#fef08a';
+        ctx.fillText(author || 'Internet Archive', 0, 16);
+        ctx.restore();
+        
+        const tex = new T.CanvasTexture(cv);
+        tex.anisotropy = 4;
+        return tex;
+      }
+
+      const bookList = [
+        { title: 'COSMOS: ASTRONOMY', author: 'Dr. Sagan', bg: '#0369a1' },
+        { title: 'ORIGINS: FOSSILS', author: 'Paleo Dept', bg: '#b45309' },
+        { title: 'WORLD HISTORY', author: 'Britannica', bg: '#15803d' },
+        { title: 'CODING: GAMES & AI', author: 'Turing Inst', bg: '#6d28d9' },
+        { title: 'OCEAN DISCOVERY', author: 'Cousteau', bg: '#0e7490' },
+        { title: 'QUANTUM PHYSICS', author: 'Max Planck', bg: '#be123c' },
+        { title: 'DIGITAL SAFETY', author: 'Skillizee', bg: '#c2410c' },
+        { title: 'RENAISSANCE ART', author: 'Da Vinci', bg: '#854d0e' },
+        { title: 'MUSIC & HARMONY', author: 'Mozart Org', bg: '#4338ca' }
+      ];
+      
+      // 3 Shelf tiers with readable book spines
+      for(let lvl = 0; lvl < 3; lvl++){
+        const sy = 0.82 + lvl * 0.68;
+        const plank = new T.Mesh(new T.BoxGeometry(2.35, 0.04, 0.3), shelfMat);
+        plank.position.set(0, sy, -0.92); g.add(plank);
+        
+        for(let b = 0; b < 9; b++){
+          const bInfo = bookList[(b + lvl * 3) % bookList.length];
+          const bh = 0.44, bw = 0.18, bd = 0.24;
+          const tex = createBookSpineCanvas(bInfo.title, bInfo.author, bInfo.bg, '#ffffff');
+          const materials = [
+            new T.MeshStandardMaterial({color: 0x334155, roughness: 0.5}), // right
+            new T.MeshStandardMaterial({color: 0x334155, roughness: 0.5}), // left
+            new T.MeshStandardMaterial({color: 0xfef9c3, roughness: 0.4}), // top (paper pages)
+            new T.MeshStandardMaterial({color: 0xfef9c3, roughness: 0.4}), // bottom
+            new T.MeshStandardMaterial({map: tex, roughness: 0.4}),        // front (readable spine)
+            new T.MeshStandardMaterial({color: 0x334155, roughness: 0.5})  // back
+          ];
+          const bMesh = new T.Mesh(new T.BoxGeometry(bw, bh, bd), materials);
+          bMesh.position.set(-0.92 + b * 0.23, sy + bh/2 + 0.02, -0.92);
+          g.add(bMesh);
+        }
+      }
+
+      // Hardwood study desk
+      const desk = box(1.4, 0.06, 0.75, 0x854d0e); desk.position.set(0, 0.75, 0.25); g.add(desk);
+      const leg1 = box(0.06, 0.7, 0.06, 0x713f12); leg1.position.set(-0.6, 0.37, 0.05); g.add(leg1);
+      const leg2 = box(0.06, 0.7, 0.06, 0x713f12); leg2.position.set(0.6, 0.37, 0.45); g.add(leg2);
+      
+      // Open Encyclopedia on desk with illustrated text
+      const bookCv = document.createElement('canvas'); bookCv.width = 512; bookCv.height = 256;
+      const bctx = bookCv.getContext('2d');
+      bctx.fillStyle = '#fefce8'; bctx.fillRect(0, 0, 512, 256);
+      bctx.fillStyle = '#1e293b'; bctx.font = 'bold 20px serif';
+      bctx.fillText('ENCYCLOPEDIA: PLANET EARTH', 24, 38);
+      bctx.fillText('ONLINE ARCHIVE (VIRTUAL LIBRARY)', 270, 38);
+      bctx.font = '14px sans-serif'; bctx.fillStyle = '#475569';
+      bctx.fillText('The internet grants universal', 24, 75);
+      bctx.fillText('access to science, literature,', 24, 100);
+      bctx.fillText('and billions of research papers.', 24, 125);
+      bctx.fillText('Updated 24/7 across every language.', 270, 75);
+      bctx.fillText('Knowledge is free and global.', 270, 100);
+      bctx.fillStyle = '#0284c7'; bctx.fillRect(24, 150, 200, 80);
+      bctx.fillStyle = '#ffffff'; bctx.font = 'bold 16px sans-serif';
+      bctx.fillText('🌍 100M+ Books Online', 36, 196);
+      
+      const openBookMat = new T.MeshStandardMaterial({map: new T.CanvasTexture(bookCv), roughness:0.4});
+      const openBook = new T.Mesh(new T.PlaneGeometry(0.65, 0.38), openBookMat);
+      openBook.rotation.x = -Math.PI / 2; openBook.position.set(0, 0.79, 0.25); g.add(openBook);
+      
+      // Banker's Brass Lamp
+      const lampBase = cyl(0.06, 0.08, 0.04, 0xd4af37, 12); lampBase.position.set(-0.5, 0.8, 0.15); g.add(lampBase);
+      const lampStem = cyl(0.015, 0.015, 0.28, 0xd4af37, 8); lampStem.position.set(-0.5, 0.94, 0.15); g.add(lampStem);
+      const lampShade = new T.Mesh(new T.ConeGeometry(0.11, 0.14, 12), new T.MeshStandardMaterial({color:0x16a34a, roughness:0.3}));
+      lampShade.position.set(-0.45, 1.06, 0.15); lampShade.rotation.z = -0.5; g.add(lampShade);
+
+      // Brass Stand Desktop Globe
+      const globeStand = cyl(0.05, 0.08, 0.1, 0xd4af37, 12); globeStand.position.set(0.5, 0.82, 0.15); g.add(globeStand);
+      const globeBall = sph(0.15, 0x0284c7, {roughness:0.4}); globeBall.position.set(0.5, 0.99, 0.15); g.add(globeBall);
+      onFrame((dt, t) => { globeBall.rotation.y = t * 1.2; });
+
+      const lbl = makeLabel('📚 Grand Library', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#1e3a8a'});
       lbl.position.set(0, 3.9, 0); g.add(lbl);
 
       parent.add(g);
       return g;
     }
 
-    // 2. GRAND LIBRARY & ENCYCLOPEDIA HUB (Open-Front Bookshelves & Study Desk)
-    function createLibrary(parent, x, z){
-      const g = new T.Group(); g.position.set(x, 0, z);
-      
-      const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
-      const backWall = box(2.6, 2.8, 0.15, 0x1e3a8a); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
-      const leftWall = box(0.15, 2.8, 2.2, 0x1d4ed8); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
-      const rightWall = box(0.15, 2.8, 2.2, 0x1d4ed8); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
-      const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
-
-      const shelfMat = new T.MeshStandardMaterial({color:0x5c2c16, roughness:0.7});
-      const bookColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899, 0x06b6d4, 0x14b8a6, 0xf97316];
-      
-      for(let lvl = 0; lvl < 3; lvl++){
-        const sy = 0.8 + lvl * 0.65;
-        const plank = new T.Mesh(new T.BoxGeometry(2.2, 0.04, 0.28), shelfMat);
-        plank.position.set(0, sy, -0.85); g.add(plank);
-        
-        for(let b = 0; b < 12; b++){
-          const bh = 0.32 + (b % 3) * 0.08, bw = 0.14;
-          const bMesh = new T.Mesh(new T.BoxGeometry(bw, bh, 0.2), new T.MeshStandardMaterial({
-            color: bookColors[(b + lvl * 3) % bookColors.length], roughness:0.5
-          }));
-          bMesh.position.set(-0.9 + b * 0.165, sy + bh/2 + 0.02, -0.85);
-          g.add(bMesh);
-        }
-      }
-
-      const desk = box(1.3, 0.06, 0.7, 0x854d0e); desk.position.set(0, 0.75, 0.25); g.add(desk);
-      const leg1 = box(0.06, 0.7, 0.06, 0x713f12); leg1.position.set(-0.55, 0.37, 0.05); g.add(leg1);
-      const leg2 = box(0.06, 0.7, 0.06, 0x713f12); leg2.position.set(0.55, 0.37, 0.45); g.add(leg2);
-      
-      const openBook = box(0.55, 0.04, 0.38, 0xfef9c3); openBook.position.set(0, 0.8, 0.25); g.add(openBook);
-      const bookLine = box(0.04, 0.05, 0.38, 0xd97706); bookLine.position.set(0, 0.81, 0.25); g.add(bookLine);
-      
-      const lampBase = cyl(0.06, 0.08, 0.04, 0xd4af37, 12); lampBase.position.set(-0.45, 0.8, 0.15); g.add(lampBase);
-      const lampStem = cyl(0.015, 0.015, 0.28, 0xd4af37, 8); lampStem.position.set(-0.45, 0.94, 0.15); g.add(lampStem);
-      const lampShade = new T.Mesh(new T.ConeGeometry(0.1, 0.12, 12), new T.MeshStandardMaterial({color:0x16a34a}));
-      lampShade.position.set(-0.4, 1.06, 0.15); lampShade.rotation.z = -0.5; g.add(lampShade);
-
-      const globeStand = cyl(0.05, 0.08, 0.1, 0xd4af37, 12); globeStand.position.set(0.45, 0.82, 0.15); g.add(globeStand);
-      const globeBall = sph(0.14, 0x0284c7, {roughness:0.4}); globeBall.position.set(0.45, 0.98, 0.15); g.add(globeBall);
-      onFrame((dt, t) => { globeBall.rotation.y = t * 1.2; });
-
-      const lbl = makeLabel('📚 Grand Library', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#1e3a8a'});
-      lbl.position.set(0, 3.8, 0); g.add(lbl);
-
-      parent.add(g);
-      return g;
-    }
-
-    // 3. CREATOR ART & GAME STUDIO (Open-Front Easel, Painted Canvas, Palette, Coding Station)
+    // ===================================================================
+    // 3. CREATOR ART & GAME STUDIO (Easel, Stretched Canvas, Palette, Coding)
+    // ===================================================================
     function createStudio(parent, x, z){
       const g = new T.Group(); g.position.set(x, 0, z);
       
-      const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
-      const backWall = box(2.6, 2.8, 0.15, 0xc2410c); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
-      const leftWall = box(0.15, 2.8, 2.2, 0xea580c); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
-      const rightWall = box(0.15, 2.8, 2.2, 0xea580c); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
-      const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
+      const floor = box(2.8, 0.2, 2.4, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
+      const backWall = box(2.8, 2.9, 0.15, 0xc2410c); backWall.position.set(0, 1.55, -1.15); g.add(backWall);
+      const leftWall = box(0.15, 2.9, 2.4, 0xea580c); leftWall.position.set(-1.35, 1.55, 0); g.add(leftWall);
+      const rightWall = box(0.15, 2.9, 2.4, 0xea580c); rightWall.position.set(1.35, 1.55, 0); g.add(rightWall);
+      const roof = box(3.0, 0.16, 2.6, 0xffffff); roof.position.set(0, 3.05, 0); g.add(roof);
 
-      const easelL1 = box(0.05, 2.1, 0.05, 0x78350f); easelL1.position.set(-0.35, 1.1, -0.2); easelL1.rotation.z = -0.1; g.add(easelL1);
-      const easelL2 = box(0.05, 2.1, 0.05, 0x78350f); easelL2.position.set(0.35, 1.1, -0.2); easelL2.rotation.z = 0.1; g.add(easelL2);
-      const easelBack = box(0.05, 1.9, 0.05, 0x78350f); easelBack.position.set(0, 1.0, -0.55); easelBack.rotation.x = -0.2; g.add(easelBack);
+      // Artist Wooden Easel
+      const easelL1 = box(0.05, 2.2, 0.05, 0x78350f); easelL1.position.set(-0.38, 1.15, -0.2); easelL1.rotation.z = -0.1; g.add(easelL1);
+      const easelL2 = box(0.05, 2.2, 0.05, 0x78350f); easelL2.position.set(0.38, 1.15, -0.2); easelL2.rotation.z = 0.1; g.add(easelL2);
+      const easelBack = box(0.05, 2.0, 0.05, 0x78350f); easelBack.position.set(0, 1.05, -0.55); easelBack.rotation.x = -0.2; g.add(easelBack);
       
-      const canvas = box(1.15, 0.9, 0.04, 0xfffbeb); canvas.position.set(0, 1.55, -0.2); g.add(canvas);
-      
-      const art1 = sph(0.14, 0xec4899); art1.scale.set(1.5, 1.2, 0.2); art1.position.set(-0.25, 1.65, -0.17); g.add(art1);
-      const art2 = sph(0.12, 0x3b82f6); art2.scale.set(1.3, 1.4, 0.2); art2.position.set(0.2, 1.45, -0.17); g.add(art2);
-      const art3 = sph(0.1, 0xfacc15); art3.scale.set(1.2, 1.0, 0.2); art3.position.set(0.0, 1.8, -0.17); g.add(art3);
+      // Painted Canvas (Digital art masterpiece)
+      const canvasCv = document.createElement('canvas'); canvasCv.width = 512; canvasCv.height = 400;
+      const cctx = canvasCv.getContext('2d');
+      // Vibrant starry night gradient painting
+      const grad = cctx.createLinearGradient(0, 0, 0, 400);
+      grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.5, '#1e3a8a'); grad.addColorStop(1, '#ec4899');
+      cctx.fillStyle = grad; cctx.fillRect(0, 0, 512, 400);
+      cctx.fillStyle = '#facc15'; cctx.beginPath(); cctx.arc(400, 90, 45, 0, Math.PI * 2); cctx.fill(); // Moon
+      // Mountain silhouette
+      cctx.fillStyle = '#090d16';
+      cctx.beginPath(); cctx.moveTo(0, 400); cctx.lineTo(150, 240); cctx.lineTo(320, 340); cctx.lineTo(512, 200); cctx.lineTo(512, 400); cctx.fill();
+      cctx.fillStyle = '#ffffff'; cctx.font = 'bold 20px sans-serif'; cctx.fillText('🎨 DIGITAL CREATIVITY', 30, 50);
 
-      const stool = cyl(0.25, 0.25, 0.45, 0x78350f, 12); stool.position.set(-0.65, 0.35, 0.35); g.add(stool);
-      const palette = cyl(0.25, 0.25, 0.03, 0xd4a373, 16); palette.position.set(-0.65, 0.6, 0.35); g.add(palette);
-      [0xef4444, 0x3b82f6, 0x22c55e, 0xfacc15, 0xa855f7].forEach((c, idx) => {
-        const dot = sph(0.04, c);
-        dot.position.set(-0.65 + Math.cos(idx * 1.2) * 0.14, 0.63, 0.35 + Math.sin(idx * 1.2) * 0.14);
+      const canvasMesh = new T.Mesh(new T.PlaneGeometry(1.25, 0.95), new T.MeshStandardMaterial({map: new T.CanvasTexture(canvasCv), roughness:0.5}));
+      canvasMesh.position.set(0, 1.6, -0.18); g.add(canvasMesh);
+
+      // Painter Stool & Color Palette with paint dollops
+      const stool = cyl(0.26, 0.26, 0.45, 0x78350f, 12); stool.position.set(-0.7, 0.35, 0.35); g.add(stool);
+      const palette = cyl(0.26, 0.26, 0.03, 0xd4a373, 16); palette.position.set(-0.7, 0.6, 0.35); g.add(palette);
+      [0xef4444, 0x3b82f6, 0x22c55e, 0xfacc15, 0xa855f7, 0xec4899].forEach((c, idx) => {
+        const dot = sph(0.045, c);
+        dot.position.set(-0.7 + Math.cos(idx * 1.05) * 0.16, 0.63, 0.35 + Math.sin(idx * 1.05) * 0.16);
         g.add(dot);
       });
 
-      const devDesk = box(0.7, 0.05, 0.5, 0x334155); devDesk.position.set(0.65, 0.65, 0.3); g.add(devDesk);
-      const devLeg = box(0.04, 0.6, 0.04, 0x1e293b); devLeg.position.set(0.65, 0.32, 0.3); g.add(devLeg);
-      const monitor = box(0.38, 0.26, 0.03, 0x0f172a); monitor.position.set(0.65, 0.88, 0.25); g.add(monitor);
-      const monScr = new T.Mesh(new T.PlaneGeometry(0.34, 0.22), new T.MeshStandardMaterial({color:0x22c55e, emissive:0x15803d, emissiveIntensity:0.6}));
-      monScr.position.set(0.65, 0.88, 0.27); g.add(monScr);
+      // Developer Workstation & Code Monitor
+      const devDesk = box(0.8, 0.05, 0.55, 0x334155); devDesk.position.set(0.7, 0.65, 0.3); g.add(devDesk);
+      const devLeg = box(0.04, 0.6, 0.04, 0x1e293b); devLeg.position.set(0.7, 0.32, 0.3); g.add(devLeg);
+      
+      const monCv = document.createElement('canvas'); monCv.width = 256; monCv.height = 180;
+      const mctx = monCv.getContext('2d');
+      mctx.fillStyle = '#0f172a'; mctx.fillRect(0, 0, 256, 180);
+      mctx.fillStyle = '#22c55e'; mctx.font = 'bold 14px monospace';
+      mctx.fillText('function createGame() {', 12, 28);
+      mctx.fillStyle = '#38bdf8';
+      mctx.fillText('  const player = new Hero();', 12, 54);
+      mctx.fillText('  player.power = 100;', 12, 80);
+      mctx.fillStyle = '#facc15';
+      mctx.fillText('  console.log("PLAY!");', 12, 106);
+      mctx.fillStyle = '#22c55e';
+      mctx.fillText('}', 12, 132);
 
-      const noteGroup = new T.Group();
-      noteGroup.position.set(0.1, 2.3, 0.1);
-      [[-0.2, 0.2, 0], [0.3, 0.4, -0.2], [0.0, 0.7, 0.1]].forEach(([nx, ny, nz]) => {
-        const noteMesh = sph(0.075, 0xfde047, {emissive:0xfacc15, emissiveIntensity:0.7});
-        noteMesh.position.set(nx, ny, nz);
-        noteGroup.add(noteMesh);
+      const monitor = box(0.44, 0.32, 0.03, 0x0f172a); monitor.position.set(0.7, 0.9, 0.25); g.add(monitor);
+      const monScr = new T.Mesh(new T.PlaneGeometry(0.4, 0.28), new T.MeshStandardMaterial({map: new T.CanvasTexture(monCv), emissive:0x15803d, emissiveIntensity:0.5}));
+      monScr.position.set(0.7, 0.9, 0.27); g.add(monScr);
+
+      // Synthesizer Musical Keyboard
+      const synth = box(0.55, 0.05, 0.22, 0x0f172a); synth.position.set(0.7, 0.68, 0.42); g.add(synth);
+      for(let k = -4; k <= 4; k++){
+        const key = box(0.045, 0.02, 0.16, 0xffffff); key.position.set(0.7 + k * 0.052, 0.71, 0.42); g.add(key);
+      }
+
+      // Floating Animated Musical Notes
+      const noteGroup = new T.Group(); noteGroup.position.set(0.1, 2.35, 0.1);
+      [[-0.25, 0.2, 0], [0.35, 0.4, -0.2], [0.0, 0.75, 0.1]].forEach(([nx, ny, nz]) => {
+        const noteMesh = sph(0.08, 0xfde047, {emissive:0xfacc15, emissiveIntensity:0.75});
+        noteMesh.position.set(nx, ny, nz); noteGroup.add(noteMesh);
       });
       g.add(noteGroup);
       onFrame((dt, t) => {
-        noteGroup.position.y = 2.3 + Math.sin(t * 2) * 0.1;
-        noteGroup.rotation.y = t * 0.8;
+        noteGroup.position.y = 2.35 + Math.sin(t * 2.5) * 0.12;
+        noteGroup.rotation.y = t * 0.9;
       });
 
       const lbl = makeLabel('🎨 Creator Studio', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#c2410c'});
-      lbl.position.set(0, 3.8, 0); g.add(lbl);
+      lbl.position.set(0, 3.9, 0); g.add(lbl);
 
       parent.add(g);
       return g;
     }
 
-    // 4. SPACE OBSERVATORY & CINEMA THEATER (Open Hall with Cinema Screen, Red Velvet Seats, Dome)
+    // ===================================================================
+    // 4. SCIENCE THEATER & CINEMA (Live Animated Space Documentary Movie Screen)
+    // ===================================================================
     function createTheater(parent, x, z){
       const g = new T.Group(); g.position.set(x, 0, z);
       
-      const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
-      const backWall = box(2.6, 2.8, 0.15, 0xa16207); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
-      const leftWall = box(0.15, 2.8, 2.2, 0xca8a04); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
-      const rightWall = box(0.15, 2.8, 2.2, 0xca8a04); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
-      const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
+      const floor = box(2.8, 0.2, 2.4, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
+      const backWall = box(2.8, 2.9, 0.15, 0xa16207); backWall.position.set(0, 1.55, -1.15); g.add(backWall);
+      const leftWall = box(0.15, 2.9, 2.4, 0xca8a04); leftWall.position.set(-1.35, 1.55, 0); g.add(leftWall);
+      const rightWall = box(0.15, 2.9, 2.4, 0xca8a04); rightWall.position.set(1.35, 1.55, 0); g.add(rightWall);
+      const roof = box(3.0, 0.16, 2.6, 0xffffff); roof.position.set(0, 3.05, 0); g.add(roof);
 
-      const dome = new T.Mesh(new T.SphereGeometry(1.0, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshStandardMaterial({color:0x1e293b, roughness:0.3}));
-      dome.position.set(0, 3.0, 0); g.add(dome);
+      // Planetarium Dome & Telescope
+      const dome = new T.Mesh(new T.SphereGeometry(1.05, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshStandardMaterial({color:0x1e293b, roughness:0.3}));
+      dome.position.set(0, 3.1, 0); g.add(dome);
 
-      const scope = cyl(0.05, 0.08, 1.1, 0xd4af37, 16);
+      const scope = cyl(0.05, 0.08, 1.15, 0xd4af37, 16);
       scope.rotation.x = -0.6; scope.rotation.y = 0.4;
-      scope.position.set(0.15, 3.45, 0.25); g.add(scope);
+      scope.position.set(0.15, 3.55, 0.25); g.add(scope);
 
-      const scr = box(2.0, 1.2, 0.04, 0x0f172a); scr.position.set(0, 1.8, -0.9); g.add(scr);
-      const display = new T.Mesh(new T.PlaneGeometry(1.9, 1.1), new T.MeshStandardMaterial({
-        color:0x3b82f6, emissive:0x1d4ed8, emissiveIntensity:0.7
+      // Cinema Screen & Animated Procedural Space Movie
+      const movieCv = document.createElement('canvas'); movieCv.width = 512; movieCv.height = 320;
+      const mctx = movieCv.getContext('2d');
+      const movieTexture = new T.CanvasTexture(movieCv);
+      movieTexture.anisotropy = 4;
+
+      const scrFrame = box(2.35, 1.45, 0.04, 0x0f172a); scrFrame.position.set(0, 1.8, -0.98); g.add(scrFrame);
+      const movieScreen = new T.Mesh(new T.PlaneGeometry(2.25, 1.35), new T.MeshStandardMaterial({
+        map: movieTexture, emissive: 0xffffff, emissiveMap: movieTexture, emissiveIntensity: 0.85
       }));
-      display.position.set(0, 1.8, -0.87); g.add(display);
+      movieScreen.position.set(0, 1.8, -0.95); g.add(movieScreen);
 
+      // Live animated space documentary rendering in onFrame
+      onFrame((dt, t) => {
+        mctx.fillStyle = '#050814'; mctx.fillRect(0, 0, 512, 320);
+        
+        // Starfield twinkling
+        for(let s = 0; s < 40; s++){
+          const sx = (s * 87 + Math.sin(t + s) * 20) % 512;
+          const sy = (s * 53 + Math.cos(t * 0.8 + s) * 15) % 320;
+          mctx.fillStyle = s % 3 === 0 ? '#60a5fa' : '#ffffff';
+          mctx.fillRect(sx, sy, 2, 2);
+        }
+
+        // Glowing Sun / Star on the left
+        const sunGlow = mctx.createRadialGradient(80, 160, 10, 80, 160, 70);
+        sunGlow.addColorStop(0, '#fef08a'); sunGlow.addColorStop(0.4, '#f59e0b'); sunGlow.addColorStop(1, 'transparent');
+        mctx.fillStyle = sunGlow; mctx.fillRect(0, 80, 160, 160);
+
+        // Orbiting Ringed Saturn Planet
+        const saturnX = 320 + Math.sin(t * 0.7) * 80;
+        const saturnY = 140 + Math.cos(t * 0.5) * 40;
+        // Planet Body
+        mctx.fillStyle = '#fde68a'; mctx.beginPath(); mctx.arc(saturnX, saturnY, 32, 0, Math.PI * 2); mctx.fill();
+        // Rings
+        mctx.strokeStyle = '#cbd5e1'; mctx.lineWidth = 6;
+        mctx.beginPath(); mctx.ellipse(saturnX, saturnY, 60, 16, -0.3, 0, Math.PI * 2); mctx.stroke();
+
+        // Orbiting Satellite / Rocket
+        const rocketX = 240 + Math.cos(t * 1.2) * 120;
+        const rocketY = 190 + Math.sin(t * 1.2) * 50;
+        mctx.fillStyle = '#38bdf8'; mctx.beginPath(); mctx.arc(rocketX, rocketY, 6, 0, Math.PI * 2); mctx.fill();
+        mctx.fillStyle = '#ef4444'; mctx.fillRect(rocketX - 10, rocketY - 2, 8, 4);
+
+        // Header Title Banner & Play indicator
+        mctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; mctx.fillRect(0, 0, 512, 42);
+        mctx.fillStyle = '#38bdf8'; mctx.font = 'bold 16px sans-serif';
+        mctx.fillText('🔴 LIVE DOCUMENTARY: SOLAR SYSTEM ODYSSEY', 20, 27);
+        mctx.fillStyle = '#22c55e'; mctx.font = 'bold 14px sans-serif';
+        mctx.fillText('HD 4K STREAMING', 370, 27);
+        
+        movieTexture.needsUpdate = true;
+      });
+
+      // Ceiling Projector Light Beam
+      const projector = box(0.3, 0.16, 0.24, 0x1e293b); projector.position.set(0, 2.85, 0.6); g.add(projector);
+      const projLens = cyl(0.04, 0.05, 0.08, 0x38bdf8, 12); projLens.rotation.x = Math.PI / 2; projLens.position.set(0, 2.85, 0.46); g.add(projLens);
+
+      // Red Velvet Tiered Cinema Armchairs
       const seatMat = new T.MeshStandardMaterial({color:0x991b1b, roughness:0.6});
       for(let r = 0; r < 2; r++){
         for(let c = -2; c <= 2; c++){
-          const seat = new T.Mesh(new T.BoxGeometry(0.24, 0.2, 0.2), seatMat);
-          seat.position.set(c * 0.32, 0.2 + r * 0.15, 0.1 + r * 0.45); g.add(seat);
-          const back = new T.Mesh(new T.BoxGeometry(0.24, 0.2, 0.04), seatMat);
-          back.position.set(c * 0.32, 0.36 + r * 0.15, 0.0 + r * 0.45); g.add(back);
+          const seat = new T.Mesh(new T.BoxGeometry(0.26, 0.22, 0.22), seatMat);
+          seat.position.set(c * 0.35, 0.22 + r * 0.16, 0.05 + r * 0.5); g.add(seat);
+          const back = new T.Mesh(new T.BoxGeometry(0.26, 0.24, 0.05), seatMat);
+          back.position.set(c * 0.35, 0.4 + r * 0.16, -0.06 + r * 0.5); g.add(back);
         }
       }
 
+      // Popcorn Bucket & Soda
+      const popcorn = cyl(0.06, 0.08, 0.16, 0xfef08a, 12); popcorn.position.set(0.9, 0.45, 0.5); g.add(popcorn);
+      const soda = cyl(0.04, 0.04, 0.14, 0xef4444, 12); soda.position.set(0.78, 0.44, 0.5); g.add(soda);
+
       const lbl = makeLabel('🎬 Science Theater', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#a16207'});
-      lbl.position.set(0, 4.3, 0); g.add(lbl);
+      lbl.position.set(0, 4.4, 0); g.add(lbl);
 
       parent.add(g);
       return g;
     }
 
+    // ===================================================================
     // 5. GLOBAL CONNECT PLAZA (Rotating Holographic Globe & Satellite Tower)
+    // ===================================================================
     function createWorldConnect(parent, x, z){
       const g = new T.Group(); g.position.set(x, 0, z);
       
-      const floor = box(2.6, 0.2, 2.2, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
-      const backWall = box(2.6, 2.8, 0.15, 0x047857); backWall.position.set(0, 1.5, -1.05); g.add(backWall);
-      const leftWall = box(0.15, 2.8, 2.2, 0x059669); leftWall.position.set(-1.25, 1.5, 0); g.add(leftWall);
-      const rightWall = box(0.15, 2.8, 2.2, 0x059669); rightWall.position.set(1.25, 1.5, 0); g.add(rightWall);
-      const roof = box(2.8, 0.16, 2.4, 0xffffff); roof.position.set(0, 2.95, 0); g.add(roof);
+      const floor = box(2.8, 0.2, 2.4, 0xe2e8f0); floor.position.set(0, 0.1, 0); g.add(floor);
+      const backWall = box(2.8, 2.9, 0.15, 0x047857); backWall.position.set(0, 1.55, -1.15); g.add(backWall);
+      const leftWall = box(0.15, 2.9, 2.4, 0x059669); leftWall.position.set(-1.35, 1.55, 0); g.add(leftWall);
+      const rightWall = box(0.15, 2.9, 2.4, 0x059669); rightWall.position.set(1.35, 1.55, 0); g.add(rightWall);
+      const roof = box(3.0, 0.16, 2.6, 0xffffff); roof.position.set(0, 3.05, 0); g.add(roof);
 
-      const earth = sph(0.68, 0x2563eb, {roughness:0.3}); earth.position.set(0, 1.6, 0.1); g.add(earth);
-      [[-0.2, 0.2, 0.6], [0.15, -0.15, 0.62], [0.35, 0.3, 0.54], [-0.35, -0.2, 0.56], [0.0, 0.45, 0.48]].forEach(([cx, cy, cz]) => {
-        const cont = sph(0.2, 0x22c55e); cont.scale.set(1.4, 0.8, 0.3); cont.position.set(cx, 1.6 + cy, 0.1 + cz); g.add(cont);
+      // 3D Rotating Earth Globe with Continents
+      const earth = sph(0.72, 0x2563eb, {roughness:0.35}); earth.position.set(0, 1.6, 0.1); g.add(earth);
+      [[-0.2, 0.2, 0.65], [0.15, -0.15, 0.68], [0.38, 0.32, 0.58], [-0.38, -0.22, 0.6], [0.0, 0.48, 0.52]].forEach(([cx, cy, cz]) => {
+        const cont = sph(0.22, 0x22c55e); cont.scale.set(1.4, 0.8, 0.3); cont.position.set(cx, 1.6 + cy, 0.1 + cz); g.add(cont);
       });
       onFrame((dt, t) => {
-        earth.rotation.y = t * 0.8;
+        earth.rotation.y = t * 0.85;
       });
 
-      const dish = cyl(0.35, 0.06, 0.08, 0xe2e8f0, 16); dish.rotation.x = -0.5; dish.position.set(0.6, 3.3, -0.2); g.add(dish);
-      const dishPole = box(0.04, 0.5, 0.04, 0x64748b); dishPole.position.set(0.6, 3.0, -0.2); g.add(dishPole);
+      // Satellite Communication Dish & Pole
+      const dish = cyl(0.38, 0.07, 0.09, 0xe2e8f0, 16); dish.rotation.x = -0.5; dish.position.set(0.65, 3.35, -0.2); g.add(dish);
+      const dishPole = box(0.04, 0.55, 0.04, 0x64748b); dishPole.position.set(0.65, 3.0, -0.2); g.add(dishPole);
 
+      // Pulsing Radio Broadcast Waves
       for(let w = 0; w < 3; w++){
-        const ring = new T.Mesh(new T.TorusGeometry(0.2 + w * 0.12, 0.02, 8, 24, Math.PI),
-          new T.MeshStandardMaterial({color:0x38bdf8, emissive:0x38bdf8, emissiveIntensity:0.6, transparent:true, opacity:0.8 - w * 0.2}));
-        ring.position.set(-0.5, 3.0 + w * 0.2, -0.3); ring.rotation.z = Math.PI / 2; g.add(ring);
+        const ring = new T.Mesh(new T.TorusGeometry(0.22 + w * 0.14, 0.02, 8, 24, Math.PI),
+          new T.MeshStandardMaterial({color:0x38bdf8, emissive:0x38bdf8, emissiveIntensity:0.65, transparent:true, opacity:0.8 - w * 0.2}));
+        ring.position.set(-0.55, 3.0 + w * 0.22, -0.3); ring.rotation.z = Math.PI / 2; g.add(ring);
       }
 
       const lbl = makeLabel('🌍 World Connect', {scale:0.42, fs:34, bg:'rgba(255,255,255,0.95)', fg:'#0f172a', border:'#047857'});
-      lbl.position.set(0, 3.8, 0); g.add(lbl);
+      lbl.position.set(0, 3.9, 0); g.add(lbl);
 
       parent.add(g);
       return g;
@@ -2286,31 +2494,35 @@ registerChapter({
         color: '#0284c7',
         desc: 'Look inside! A complete 3D Dinosaur Skeleton fossil stands in the main hall with ancient vertebrae, ribs, skull, and sharp teeth! Virtual museums let you tour the Smithsonian, the Louvre, and prehistoric worlds without leaving your chair.',
         actionText: '🔍 Examine Dinosaur Skeleton',
-        actionMsg: '🦖 You studied the T-Rex fossil! Virtual exhibits let you explore 65 million years of history in 3D.'
+        actionMsg: '🦖 You studied the T-Rex fossil! Virtual exhibits let you explore 65 million years of history in 3D.',
+        camPos: [-5.4, 1.95, 0.9], lookPos: [-5.4, 1.25, -1.8]
       },
       {
         grp: bLibrary, name: '📚 Grand Library & Research Hub',
         tag: 'Infinite Books, Science & Encyclopedias',
         color: '#1e3a8a',
-        desc: 'Look at the multi-tier shelves packed with thousands of books, glowing encyclopedia manuscripts, and a desktop globe! The internet is the largest library ever built — always open, translated into every language.',
+        desc: 'Look at the multi-tier shelves packed with readable books (Cosmos, World History, Coding, Art!), glowing encyclopedia manuscripts, and a desktop globe! The internet is the largest library ever built — always open, translated into every language.',
         actionText: '📖 Open Encyclopedia Archive',
-        actionMsg: '📘 You flipped through Mars space research! Millions of research papers and educational books are at your fingertips.'
+        actionMsg: '📘 You flipped through Mars space research! Millions of research papers and educational books are at your fingertips.',
+        camPos: [-2.7, 2.0, 1.2], lookPos: [-2.7, 1.2, -2.4]
       },
       {
         grp: bStudio, name: '🎨 Creator & Code Studio',
         tag: 'Digital Art, Music & Game Coding',
         color: '#ea580c',
-        desc: 'See the artist easel with fresh oil paint splashes, palette of vivid colors, and floating musical notes! On the internet, you are not just a watcher — you can paint digital art, compose music, and code software.',
+        desc: 'See the artist easel with fresh starry landscape art, palette of vivid colors, and floating musical notes! On the internet, you are not just a watcher — you can paint digital art, compose music, and code software.',
         actionText: '🎨 Launch Creative Canvas',
-        actionMsg: '🖌️ You mixed colors and programmed a sound loop! Creating beats passive scrolling every time.'
+        actionMsg: '🖌️ You mixed colors and programmed a sound loop! Creating beats passive scrolling every time.',
+        camPos: [0.0, 1.85, -0.5], lookPos: [0.0, 1.25, -2.8]
       },
       {
         grp: bTheater, name: '🎬 Science Theater & Planetarium',
-        tag: 'Space Telescopes & Educational Documentaries',
+        tag: 'Space Telescopes & Animated Documentaries',
         color: '#a16207',
-        desc: 'Look inside the tiered cinema hall and peek through the observatory telescope! Millions of educational channels teach everything from how jet engines fly to quantum physics with animations.',
-        actionText: '🔭 Peer Through Deep Space Telescope',
-        actionMsg: '🌌 You spotted Saturn\'s rings and distant nebulae! Video learning turns complex ideas into crystal-clear fun.'
+        desc: 'Watch the live animated 4K space movie playing on the cinema screen! Peering into the cosmos, educational channels teach everything from jet propulsion to planetary orbits with crystal-clear animation.',
+        actionText: '🔭 Watch Space Documentary',
+        actionMsg: '🌌 You watched Saturn\'s rings and interstellar orbits! Video learning turns complex science into thrilling fun.',
+        camPos: [2.7, 2.0, 1.2], lookPos: [2.7, 1.2, -2.4]
       },
       {
         grp: bWorld, name: '🌍 World Connect Plaza',
@@ -2318,35 +2530,52 @@ registerChapter({
         color: '#047857',
         desc: 'Notice the giant glowing rotating globe and satellite communication tower! The internet connects classmates for group projects, lets you video-call family anywhere on Earth, and introduces global cultures.',
         actionText: '📡 Connect Global Satellite Signal',
-        actionMsg: '🛰️ Global connection established! You shared ideas with students across 4 continents.'
+        actionMsg: '🛰️ Global connection established! You shared ideas with students across 4 continents.',
+        camPos: [5.4, 2.1, 1.8], lookPos: [5.4, 1.3, -1.8]
       }
     ];
 
     let visitedSet = new Set();
+    let currentBuildingIdx = 0;
+    let isInspectingCloseUp = false;
 
-    // Central function to open any building card modal with full navigation & close button
-    function openBuildingModal(idx){
-      const bInfo = buildingsInfo[idx];
+    // Transition smoothly to any building's interior close-up
+    function goToBuilding(idx, showCardModal = true){
+      idx = (idx + buildingsInfo.length) % buildingsInfo.length;
+      currentBuildingIdx = idx;
+      isInspectingCloseUp = true;
       visitedSet.add(idx);
-      SFX.pop();
-      if(SFX.swoosh) SFX.swoosh();
+      
+      const bInfo = buildingsInfo[idx];
+      if(SFX.whoosh) SFX.whoosh();
 
-      // Smoothly fly camera to close-up interior view of this building
-      flyCam(bInfo.grp.position.x, 2.3, bInfo.grp.position.z + 3.8, bInfo.grp.position.x, 1.6, bInfo.grp.position.z, 0.85);
+      // Smoothly fly camera to high-detail close-up interior view
+      flyCam(bInfo.camPos[0], bInfo.camPos[1], bInfo.camPos[2], bInfo.lookPos[0], bInfo.lookPos[1], bInfo.lookPos[2], 0.9);
 
+      if(showCardModal){
+        renderCardModal(idx);
+      } else {
+        renderInspectionHUD(idx);
+      }
+    }
+
+    // Render the complete Information Card Modal
+    function renderCardModal(idx){
+      const bInfo = buildingsInfo[idx];
       clearUI();
+      
       const card = el('div', 'building-modal');
       card.style.cssText = `
         position: fixed;
-        top: 38%;
+        top: 36%;
         left: 50%;
         transform: translate(-50%, -50%);
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(18px);
         border: 3.5px solid ${bInfo.color};
         border-radius: 26px;
-        padding: 26px 32px 22px;
-        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.35);
+        padding: 24px 30px 20px;
+        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.38);
         z-index: 95;
         max-width: 620px;
         width: 92%;
@@ -2354,31 +2583,29 @@ registerChapter({
         animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
       `;
 
-      const hasPrev = idx > 0;
-      const hasNext = idx < buildingsInfo.length - 1;
       const allExplored = visitedSet.size >= 4;
 
       card.innerHTML = `
-        <!-- Close Button (✕) -->
+        <!-- Close / Hide Card Button (✕) -->
         <button id="btnModalClose" style="
           position: absolute;
           top: 14px;
           right: 16px;
           background: #f1f5f9;
           border: 2px solid #cbd5e1;
-          color: #475569;
+          color: #334155;
           font-size: 18px;
           font-weight: 900;
-          width: 36px;
-          height: 36px;
+          width: 38px;
+          height: 38px;
           border-radius: 50%;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        " title="Close Card and return to Plaza">✕</button>
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        " title="Hide Card & Look Closely at Exhibit">✕</button>
 
         <div style="display:inline-block;padding:5px 14px;background:${bInfo.color}18;color:${bInfo.color};border-radius:20px;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">
           ${bInfo.tag}
@@ -2389,46 +2616,41 @@ registerChapter({
         </p>
 
         <!-- Main Action Button -->
-        <div id="modalActionArea" style="margin-bottom:16px;">
+        <div id="modalActionArea" style="margin-bottom:14px;">
           <button id="btnBldAction" class="btn" style="background:${bInfo.color};color:#fff;padding:12px 24px;font-size:14.5px;font-weight:800;border-radius:14px;border:none;cursor:pointer;box-shadow:0 6px 18px ${bInfo.color}44;">
             ${bInfo.actionText} ✨
           </button>
         </div>
 
-        <!-- Navigation Bar (Previous, Next Building, Finish / Next Chapter) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:14px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
+        <!-- Navigation Bar (Previous Hub, Next Hub, Look Around, Next Chapter) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:12px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
           <div>
-            ${hasPrev ? `<button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Previous Hub</button>` : `<span style="width:10px;"></span>`}
-          </div>
-          <div style="font-size:13px;font-weight:700;color:#64748b;">
-            Hub ${idx + 1} of ${buildingsInfo.length} (${visitedSet.size} explored)
+            <button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Prev Hub</button>
           </div>
           <div>
-            ${hasNext ? `<button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>` : `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`}
+            <button id="btnLookClosely" style="background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">👁️ Look Closely</button>
+          </div>
+          <div>
+            <button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>
           </div>
         </div>
       `;
 
-      // 1. Close Button handler
+      // 1. Close Button & Look Closely handlers
       const btnClose = card.querySelector('#btnModalClose');
-      btnClose.onmouseenter = () => { btnClose.style.background = '#e2e8f0'; btnClose.style.transform = 'scale(1.08)'; };
-      btnClose.onmouseleave = () => { btnClose.style.background = '#f1f5f9'; btnClose.style.transform = 'scale(1)'; };
-      btnClose.onclick = () => {
-        SFX.click();
-        clearUI();
-        flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.8);
-        renderPlazaQuickNav();
-        if(visitedSet.size >= 4){
-          api.prompt("🎉 You explored the superpower hubs! Tap 'Next Chapter' or click any building again.");
-        } else {
-          api.prompt(`🏙️ (${visitedSet.size}/${buildingsInfo.length} explored) Tap any building to step inside!`);
-        }
+      const btnLook = card.querySelector('#btnLookClosely');
+      const hideCardAction = () => {
+        if(SFX.click) SFX.click();
+        renderInspectionHUD(idx);
+        toast(`🔍 Inspecting ${bInfo.name}. Use the bottom controls to navigate or return to the plaza!`);
       };
+      btnClose.onclick = hideCardAction;
+      btnLook.onclick = hideCardAction;
 
-      // 2. Main Action Button handler
+      // 2. Action button handler
       const btnAct = card.querySelector('#btnBldAction');
       btnAct.onclick = () => {
-        SFX.coin();
+        if(SFX.coin) SFX.coin();
         addXP(30);
         toast(bInfo.actionMsg);
         card.querySelector('#modalActionArea').innerHTML = `
@@ -2436,45 +2658,81 @@ registerChapter({
             ✅ ${bInfo.actionMsg}
           </div>
         `;
-        if(visitedSet.size >= 4 && !hasNext){
-          const nextBtnArea = card.querySelector('#btnNextBld');
-          if(nextBtnArea) nextBtnArea.outerHTML = `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`;
-        }
       };
 
       // 3. Previous Button handler
       const btnPrev = card.querySelector('#btnPrevBld');
-      if(btnPrev){
-        btnPrev.onclick = () => {
-          SFX.click();
-          openBuildingModal(idx - 1);
-        };
-      }
+      btnPrev.onclick = () => {
+        goToBuilding(idx - 1, true);
+      };
 
       // 4. Next Building Button handler
       const btnNext = card.querySelector('#btnNextBld');
-      if(btnNext){
-        btnNext.onclick = () => {
-          SFX.click();
-          openBuildingModal(idx + 1);
-        };
-      }
+      btnNext.onclick = () => {
+        goToBuilding(idx + 1, true);
+      };
 
-      // 5. Finish / Next Chapter Button handler
-      const btnFinish = card.querySelector('#btnFinishCh3');
-      if(btnFinish){
-        btnFinish.onclick = () => {
-          SFX.chapter();
+      addUI(card);
+    }
+
+    // Inspection HUD Toolbar (shown when card is closed to let user view the 3D scene freely)
+    function renderInspectionHUD(idx){
+      clearUI();
+      const bInfo = buildingsInfo[idx];
+      
+      const hudContainer = el('div', 'inspection-hud');
+      hudContainer.style.cssText = `
+        position: fixed;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(16px);
+        border: 2.5px solid ${bInfo.color};
+        border-radius: 32px;
+        padding: 8px 18px;
+        box-shadow: 0 12px 35px rgba(15, 23, 42, 0.28);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 85;
+        max-width: 96%;
+        overflow-x: auto;
+        animation: pop .25s ease-out;
+      `;
+
+      hudContainer.innerHTML = `
+        <button id="hudPrev" style="background:#f1f5f9;border:1.5px solid #cbd5e1;color:#334155;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;">◀ Prev Hub</button>
+        <button id="hudShowCard" style="background:${bInfo.color};border:none;color:#fff;padding:8px 18px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px ${bInfo.color}44;">📖 ${bInfo.name.split(' ')[0]} ${bInfo.name.split(' ')[1] || ''} Info</button>
+        <button id="hudNext" style="background:#2563eb;border:none;color:#fff;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>
+        <button id="hudPlaza" style="background:#f8fafc;border:1.5px solid #94a3b8;color:#475569;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;">🏛️ Plaza View</button>
+        ${visitedSet.size >= 3 ? `<button id="hudNextChap" style="background:#10b981;border:none;color:#fff;padding:8px 18px;border-radius:18px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.4);">Next Chapter 🚀</button>` : ''}
+      `;
+
+      hudContainer.querySelector('#hudPrev').onclick = () => goToBuilding(idx - 1, false);
+      hudContainer.querySelector('#hudShowCard').onclick = () => renderCardModal(idx);
+      hudContainer.querySelector('#hudNext').onclick = () => goToBuilding(idx + 1, false);
+      hudContainer.querySelector('#hudPlaza').onclick = () => {
+        if(SFX.whoosh) SFX.whoosh();
+        isInspectingCloseUp = false;
+        flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.85);
+        renderPlazaQuickNav();
+      };
+      
+      const btnNextChap = hudContainer.querySelector('#hudNextChap');
+      if(btnNextChap){
+        btnNextChap.onclick = () => {
+          if(SFX.chapter) SFX.chapter();
           clearUI();
           addXP(100);
           api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
         };
       }
 
-      addUI(card);
+      addUI(hudContainer);
     }
 
-    // Plaza HUD Quick Navigation Pills (Always available when card is closed)
+    // Plaza HUD Quick Navigation Pills (Wide overview)
     function renderPlazaQuickNav(){
       clearUI();
       const navContainer = el('div', 'plaza-quick-nav');
@@ -2512,7 +2770,7 @@ registerChapter({
           white-space: nowrap;
           transition: all 0.2s;
         `;
-        pill.onclick = () => openBuildingModal(bIdx);
+        pill.onclick = () => goToBuilding(bIdx, true);
         navContainer.appendChild(pill);
       });
 
@@ -2531,7 +2789,7 @@ registerChapter({
           box-shadow: 0 4px 12px rgba(16,185,129,0.4);
         `;
         nextChapPill.onclick = () => {
-          SFX.chapter();
+          if(SFX.chapter) SFX.chapter();
           clearUI();
           addXP(100);
           api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
@@ -2542,10 +2800,10 @@ registerChapter({
       addUI(navContainer);
     }
 
-    // Connect 3D mesh clicks to openBuildingModal
+    // Connect 3D mesh clicks to goToBuilding
     buildingsInfo.forEach((bInfo, idx) => {
       makeClickable(bInfo.grp, () => {
-        openBuildingModal(idx);
+        goToBuilding(idx, true);
       });
     });
 
@@ -2561,16 +2819,13 @@ registerChapter({
     ];
 
     runDialogue(dialogues, () => {
-      api.prompt("🏙️ Tap any building (Museum, Library, Studio, Theater, Globe) or use the buttons below to explore!");
+      api.prompt("🏙️ Tap any building or use the buttons below to step inside and explore!");
       renderPlazaQuickNav();
     });
   }
 });
 
 
-/* =====================================================================
-   CHAPTER 04: Good or Not So Good? (Habit Sorting)
-   ===================================================================== */
 registerChapter({
   id:'ch4', title:'Good or Not So Good?', logtag:'CHOICES',
   bg1:'#74c6ef', bg2:'#ffe8ea',
