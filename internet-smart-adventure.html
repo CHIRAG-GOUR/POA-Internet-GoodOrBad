@@ -2577,13 +2577,11 @@ registerChapter({
         padding: 24px 30px 20px;
         box-shadow: 0 25px 70px rgba(15, 23, 42, 0.38);
         z-index: 95;
-        max-width: 620px;
+        max-width: 660px;
         width: 92%;
         text-align: center;
         animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
       `;
-
-      const allExplored = visitedSet.size >= 4;
 
       card.innerHTML = `
         <!-- Close / Hide Card Button (✕) -->
@@ -2622,16 +2620,19 @@ registerChapter({
           </button>
         </div>
 
-        <!-- Navigation Bar (Previous Hub, Next Hub, Look Around, Next Chapter) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:12px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
-          <div>
-            <button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Prev Hub</button>
+        <!-- Navigation Bar (Previous Hub, Look Closely, Progress, Next Hub, Next Chapter) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:14px;border-top:1.5px solid #e2e8f0;flex-wrap:nowrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 14px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Prev Hub</button>
+            <button id="btnLookClosely" style="background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:8px 14px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;">👁️ Look Closely</button>
           </div>
-          <div>
-            <button id="btnLookClosely" style="background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">👁️ Look Closely</button>
+          <div style="font-size:13px;font-weight:800;color:#64748b;white-space:nowrap;">
+            Hub ${idx + 1} of ${buildingsInfo.length}
           </div>
-          <div>
-            <button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${idx < buildingsInfo.length - 1 ? 
+              `<button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>` : ''}
+            <button id="btnNextChapter" style="background:#10b981;border:none;color:#fff;padding:8px 20px;font-size:13.5px;font-weight:900;border-radius:12px;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.4);display:${(idx === buildingsInfo.length - 1 || visitedSet.size >= 3) ? 'inline-flex' : 'none'};align-items:center;gap:4px;">Next Chapter 🚀</button>
           </div>
         </div>
       `;
@@ -2639,38 +2640,62 @@ registerChapter({
       // 1. Close Button & Look Closely handlers
       const btnClose = card.querySelector('#btnModalClose');
       const btnLook = card.querySelector('#btnLookClosely');
-      const hideCardAction = () => {
+      const hideCardAction = (e) => {
+        if(e) e.stopPropagation();
         if(SFX.click) SFX.click();
         renderInspectionHUD(idx);
         toast(`🔍 Inspecting ${bInfo.name}. Use the bottom controls to navigate or return to the plaza!`);
       };
-      btnClose.onclick = hideCardAction;
-      btnLook.onclick = hideCardAction;
+      if(btnClose) btnClose.onclick = hideCardAction;
+      if(btnLook) btnLook.onclick = hideCardAction;
 
       // 2. Action button handler
       const btnAct = card.querySelector('#btnBldAction');
-      btnAct.onclick = () => {
-        if(SFX.coin) SFX.coin();
-        addXP(30);
-        toast(bInfo.actionMsg);
-        card.querySelector('#modalActionArea').innerHTML = `
-          <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
-            ✅ ${bInfo.actionMsg}
-          </div>
-        `;
-      };
+      if(btnAct){
+        btnAct.onclick = (e) => {
+          if(e) e.stopPropagation();
+          if(SFX.coin) SFX.coin();
+          addXP(30);
+          toast(bInfo.actionMsg);
+          card.querySelector('#modalActionArea').innerHTML = `
+            <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
+              ✅ ${bInfo.actionMsg}
+            </div>
+          `;
+        };
+      }
 
       // 3. Previous Button handler
       const btnPrev = card.querySelector('#btnPrevBld');
-      btnPrev.onclick = () => {
-        goToBuilding(idx - 1, true);
-      };
+      if(btnPrev){
+        btnPrev.onclick = (e) => {
+          if(e) e.stopPropagation();
+          goToBuilding(idx - 1, true);
+        };
+      }
 
       // 4. Next Building Button handler
       const btnNext = card.querySelector('#btnNextBld');
-      btnNext.onclick = () => {
-        goToBuilding(idx + 1, true);
-      };
+      if(btnNext){
+        btnNext.onclick = (e) => {
+          if(e) e.stopPropagation();
+          goToBuilding(idx + 1, true);
+        };
+      }
+
+      // 5. Next Chapter Button handler (Advances directly to chapter completion)
+      const btnNextChap = card.querySelector('#btnNextChapter');
+      if(btnNextChap){
+        btnNextChap.onclick = (e) => {
+          if(e) e.stopPropagation();
+          if(SFX.chapter) SFX.chapter();
+          clearUI();
+          addXP(100);
+          api.done({
+            msg: "Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"
+          });
+        };
+      }
 
       addUI(card);
     }
@@ -2706,13 +2731,14 @@ registerChapter({
         <button id="hudShowCard" style="background:${bInfo.color};border:none;color:#fff;padding:8px 18px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px ${bInfo.color}44;">📖 ${bInfo.name.split(' ')[0]} ${bInfo.name.split(' ')[1] || ''} Info</button>
         <button id="hudNext" style="background:#2563eb;border:none;color:#fff;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>
         <button id="hudPlaza" style="background:#f8fafc;border:1.5px solid #94a3b8;color:#475569;padding:8px 14px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;">🏛️ Plaza View</button>
-        ${visitedSet.size >= 3 ? `<button id="hudNextChap" style="background:#10b981;border:none;color:#fff;padding:8px 18px;border-radius:18px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.4);">Next Chapter 🚀</button>` : ''}
+        <button id="hudNextChap" style="background:#10b981;border:none;color:#fff;padding:8px 18px;border-radius:18px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.4);">Next Chapter 🚀</button>
       `;
 
-      hudContainer.querySelector('#hudPrev').onclick = () => goToBuilding(idx - 1, false);
-      hudContainer.querySelector('#hudShowCard').onclick = () => renderCardModal(idx);
-      hudContainer.querySelector('#hudNext').onclick = () => goToBuilding(idx + 1, false);
-      hudContainer.querySelector('#hudPlaza').onclick = () => {
+      hudContainer.querySelector('#hudPrev').onclick = (e) => { if(e) e.stopPropagation(); goToBuilding(idx - 1, false); };
+      hudContainer.querySelector('#hudShowCard').onclick = (e) => { if(e) e.stopPropagation(); renderCardModal(idx); };
+      hudContainer.querySelector('#hudNext').onclick = (e) => { if(e) e.stopPropagation(); goToBuilding(idx + 1, false); };
+      hudContainer.querySelector('#hudPlaza').onclick = (e) => {
+        if(e) e.stopPropagation();
         if(SFX.whoosh) SFX.whoosh();
         isInspectingCloseUp = false;
         flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.85);
@@ -2721,7 +2747,8 @@ registerChapter({
       
       const btnNextChap = hudContainer.querySelector('#hudNextChap');
       if(btnNextChap){
-        btnNextChap.onclick = () => {
+        btnNextChap.onclick = (e) => {
+          if(e) e.stopPropagation();
           if(SFX.chapter) SFX.chapter();
           clearUI();
           addXP(100);
@@ -2770,32 +2797,34 @@ registerChapter({
           white-space: nowrap;
           transition: all 0.2s;
         `;
-        pill.onclick = () => goToBuilding(bIdx, true);
+        pill.onclick = (e) => {
+          if(e) e.stopPropagation();
+          goToBuilding(bIdx, true);
+        };
         navContainer.appendChild(pill);
       });
 
-      if(visitedSet.size >= 3){
-        const nextChapPill = el('button', 'pill-btn', 'Next Chapter 🚀');
-        nextChapPill.style.cssText = `
-          background: #10b981;
-          color: #fff;
-          border: none;
-          padding: 7px 18px;
-          border-radius: 18px;
-          font-size: 13px;
-          font-weight: 900;
-          cursor: pointer;
-          white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(16,185,129,0.4);
-        `;
-        nextChapPill.onclick = () => {
-          if(SFX.chapter) SFX.chapter();
-          clearUI();
-          addXP(100);
-          api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
-        };
-        navContainer.appendChild(nextChapPill);
-      }
+      const nextChapPill = el('button', 'pill-btn', 'Next Chapter 🚀');
+      nextChapPill.style.cssText = `
+        background: #10b981;
+        color: #fff;
+        border: none;
+        padding: 7px 18px;
+        border-radius: 18px;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+      `;
+      nextChapPill.onclick = (e) => {
+        if(e) e.stopPropagation();
+        if(SFX.chapter) SFX.chapter();
+        clearUI();
+        addXP(100);
+        api.done({msg:"Incredible! You stepped inside the Digital City exhibits and discovered all the amazing superpowers of the internet!"});
+      };
+      navContainer.appendChild(nextChapPill);
 
       addUI(navContainer);
     }
