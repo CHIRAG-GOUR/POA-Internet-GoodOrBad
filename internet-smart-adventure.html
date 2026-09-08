@@ -2857,74 +2857,487 @@ registerChapter({
 
 registerChapter({
   id:'ch4', title:'Good or Not So Good?', logtag:'CHOICES',
-  bg1:'#74c6ef', bg2:'#ffe8ea',
+  bg1:'#60a5fa', bg2:'#dbeafe',
   endTitle:'Chapter 4 Complete!',
   learned:[
-    'Helpful habits make us smarter, happier, and connected.',
-    'Risky habits waste time, strain eyes, or compromise safety.',
-    'Knowing the difference is your first superpower.'
+    'Helpful habits (research, coding, kindness, sleep) make us smarter and happier.',
+    'Risky habits (doomscrolling, cyberbullying, late-night screens) drain focus and health.',
+    'Making conscious good choices is your core digital superpower.'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0x9fd0a6, 40);
+    addLights(root, 'warm');
+    ground(root, 0x86efac, 45);
+
+    // =====================================================================
+    // 3D STAGE & PEDESTALS
+    // =====================================================================
     
-    const podL = Props.pedestal(2.6, 0.6, 2.6, 0xd4edda); podL.position.set(-3.2, 0, -1); root.add(podL);
-    const lblL = makeLabel('✅ GOOD CHOICE', {scale:0.48, fs:36, bg:'#28a745', fg:'#fff'}); lblL.position.set(-3.2, 1.8, -1); root.add(lblL);
+    // Left: GOOD CHOICE Sanctuary (Emerald & Gold)
+    const podL = Props.pedestal(3.0, 0.65, 2.8, 0x059669);
+    podL.position.set(-3.5, 0, -0.6); root.add(podL);
+    const ringL = new T.Mesh(new T.TorusGeometry(1.6, 0.05, 8, 32), new T.MeshBasicMaterial({color:0x34d399}));
+    ringL.rotation.x = Math.PI / 2; ringL.position.set(-3.5, 0.68, -0.6); root.add(ringL);
+    const lblL = makeLabel('✅ GOOD CHOICE', {scale:0.52, fs:36, bg:'#059669', fg:'#ffffff', border:'#10b981'});
+    lblL.position.set(-3.5, 2.7, -0.6); root.add(lblL);
+
+    // Right: NOT SO GOOD Recycler (Ruby & Amber)
+    const podR = Props.pedestal(3.0, 0.65, 2.8, 0xdc2626);
+    podR.position.set(3.5, 0, -0.6); root.add(podR);
+    const ringR = new T.Mesh(new T.TorusGeometry(1.6, 0.05, 8, 32), new T.MeshBasicMaterial({color:0xf87171}));
+    ringR.rotation.x = Math.PI / 2; ringR.position.set(3.5, 0.68, -0.6); root.add(ringR);
+    const lblR = makeLabel('❌ NOT SO GOOD', {scale:0.52, fs:36, bg:'#dc2626', fg:'#ffffff', border:'#ef4444'});
+    lblR.position.set(3.5, 2.7, -0.6); root.add(lblR);
+
+    // Center: Holographic Teleport Podium
+    const podC = Props.pedestal(2.2, 0.45, 2.2, 0x1e293b);
+    podC.position.set(0, 0, -0.6); root.add(podC);
+    const holoGrid = new T.Mesh(new T.CylinderGeometry(1.0, 1.0, 0.04, 32), new T.MeshStandardMaterial({
+      color:0x38bdf8, emissive:0x0284c7, emissiveIntensity:0.8, roughness:0.2
+    }));
+    holoGrid.position.set(0, 0.48, -0.6); root.add(holoGrid);
+
+    // Glowing Holo Beam Cylinder
+    const beamMat = new T.MeshBasicMaterial({color:0x38bdf8, transparent:true, opacity:0.3, side:T.DoubleSide});
+    const holoBeam = new T.Mesh(new T.CylinderGeometry(1.0, 1.0, 2.8, 24, 1, true), beamMat);
+    holoBeam.position.set(0, 1.9, -0.6); root.add(holoBeam);
+
+    // Visible Trophy Slots on Good Pedestal (Front and Center)
+    const trophySlots = [
+      [-4.1, 1.0, 0.1],
+      [-3.3, 1.0, 0.1],
+      [-2.5, 1.0, 0.1],
+      [-3.7, 1.0, -0.9],
+      [-2.9, 1.0, -0.9]
+    ];
+
+    // =====================================================================
+    // 3D SCENARIO ITEM BUILDERS
+    // =====================================================================
     
-    const podR = Props.pedestal(2.6, 0.6, 2.6, 0xf8d7da); podR.position.set(3.2, 0, -1); root.add(podR);
-    const lblR = makeLabel('❌ NOT SO GOOD', {scale:0.48, fs:36, bg:'#dc3545', fg:'#fff'}); lblR.position.set(3.2, 1.8, -1); root.add(lblR);
-    
-    const {b, g} = bringKids(root, -1.8, 1.8, 1.8, 1.8, 0.3);
-    camera.position.set(0, 3.4, 6.2); Cam.look.set(0, 1.4, -0.5);
-    
+    // 1. Mars Planet & Science Rover
+    function createMarsItem(){
+      const g = new T.Group();
+      const marsMat = new T.MeshStandardMaterial({color:0xc2410c, roughness:0.7, metalness:0.1});
+      const planet = new T.Mesh(new T.SphereGeometry(0.55, 24, 24), marsMat); g.add(planet);
+      const orbMat = new T.MeshBasicMaterial({color:0xfde047, transparent:true, opacity:0.7});
+      const orbit = new T.Mesh(new T.TorusGeometry(0.82, 0.018, 6, 32), orbMat);
+      orbit.rotation.x = Math.PI / 3; g.add(orbit);
+      const sat = new T.Mesh(new T.BoxGeometry(0.14, 0.09, 0.09), new T.MeshStandardMaterial({color:0xe2e8f0, metalness:0.8}));
+      sat.position.set(0.75, 0.38, 0.1); g.add(sat);
+      const solarL = new T.Mesh(new T.BoxGeometry(0.22, 0.02, 0.1), new T.MeshStandardMaterial({color:0x0284c7}));
+      solarL.position.set(0.75, 0.38, 0.24); g.add(solarL);
+      const satGlow = sph(0.05, 0x38bdf8, {emissive:0x38bdf8, emissiveIntensity:1.2});
+      satGlow.position.set(0.75, 0.44, 0.1); g.add(satGlow);
+      return g;
+    }
+
+    // 2. Kindness Shield & Empathy Heart
+    function createKindnessItem(){
+      const g = new T.Group();
+      const shieldMat = new T.MeshStandardMaterial({color:0xd97706, metalness:0.8, roughness:0.2});
+      const shield = new T.Mesh(new T.CylinderGeometry(0.5, 0.12, 0.7, 6), shieldMat);
+      shield.rotation.z = Math.PI; g.add(shield);
+      const heartMat = new T.MeshStandardMaterial({color:0xec4899, emissive:0xdb2777, emissiveIntensity:0.7, roughness:0.3});
+      const h1 = new T.Mesh(new T.SphereGeometry(0.16, 16, 16), heartMat); h1.position.set(-0.1, 0.1, 0.18); g.add(h1);
+      const h2 = new T.Mesh(new T.SphereGeometry(0.16, 16, 16), heartMat); h2.position.set(0.1, 0.1, 0.18); g.add(h2);
+      const hCone = new T.Mesh(new T.ConeGeometry(0.25, 0.35, 16), heartMat);
+      hCone.rotation.z = Math.PI; hCone.position.set(0, -0.1, 0.18); g.add(hCone);
+      [-0.45, 0.45].forEach(x => {
+        const star = sph(0.07, 0xfde047, {emissive:0xfde047, emissiveIntensity:1.2});
+        star.position.set(x, 0.25, 0.22); g.add(star);
+      });
+      return g;
+    }
+
+    // 3. Coding Game Station & Matrix Arcade
+    function createCodingItem(){
+      const g = new T.Group();
+      const base = box(0.7, 0.05, 0.5, 0x334155); g.add(base);
+      const scr = new T.Mesh(new T.BoxGeometry(0.66, 0.44, 0.03), new T.MeshStandardMaterial({color:0x0f172a, emissive:0x10b981, emissiveIntensity:0.5}));
+      scr.position.set(0, 0.26, -0.22); scr.rotation.x = -0.15; g.add(scr);
+      const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#0f172a'; ctx.fillRect(0,0,256,160);
+      ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px monospace';
+      ctx.fillText('function createGame(){', 12, 30);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('  player.power = 100;', 12, 60);
+      ctx.fillText('  score.addXP(50);', 12, 90);
+      ctx.fillStyle = '#fde047';
+      ctx.fillText('  launchRocket();', 12, 120);
+      ctx.fillText('}', 12, 145);
+      const codeTex = new T.CanvasTexture(cv);
+      const codePlane = new T.Mesh(new T.PlaneGeometry(0.62, 0.4), new T.MeshBasicMaterial({map:codeTex}));
+      codePlane.position.set(0, 0.26, -0.2); codePlane.rotation.x = -0.15; g.add(codePlane);
+      const joyBase = box(0.2, 0.08, 0.2, 0xef4444); joyBase.position.set(0.48, 0.04, 0.12); g.add(joyBase);
+      const stick = cyl(0.018, 0.018, 0.18, 0xffffff, 8); stick.position.set(0.48, 0.15, 0.12); g.add(stick);
+      const joyTop = sph(0.05, 0xfde047, {emissive:0xf59e0b, emissiveIntensity:1}); joyTop.position.set(0.48, 0.26, 0.12); g.add(joyTop);
+      return g;
+    }
+
+    // 4. Cozy Rest Moon, Lamp & 10 PM Clock
+    function createSleepItem(){
+      const g = new T.Group();
+      const moonMat = new T.MeshStandardMaterial({color:0xfef08a, emissive:0xfde047, emissiveIntensity:0.8, roughness:0.2});
+      const moon = new T.Mesh(new T.TorusGeometry(0.4, 0.14, 12, 24, Math.PI * 1.25), moonMat);
+      moon.position.set(-0.3, 0.3, 0); moon.rotation.z = -0.3; g.add(moon);
+      const lampBase = cyl(0.16, 0.18, 0.07, 0x713f12, 12); lampBase.position.set(0.35, 0.03, 0); g.add(lampBase);
+      const lampStem = cyl(0.024, 0.024, 0.4, 0xd4af37, 8); lampStem.position.set(0.35, 0.22, 0); g.add(lampStem);
+      const shade = new T.Mesh(new T.ConeGeometry(0.22, 0.28, 16, 1, true), new T.MeshStandardMaterial({
+        color:0xffedd5, emissive:0xfbbf24, emissiveIntensity:1, roughness:0.3
+      }));
+      shade.position.set(0.35, 0.46, 0); g.add(shade);
+      const clockMesh = new T.Mesh(new T.CylinderGeometry(0.16, 0.16, 0.09, 16), new T.MeshStandardMaterial({color:0x0284c7, metalness:0.6}));
+      clockMesh.rotation.x = Math.PI / 2; clockMesh.position.set(0.06, 0.09, 0.25); g.add(clockMesh);
+      const clkFace = new T.Mesh(new T.CircleGeometry(0.14, 16), new T.MeshBasicMaterial({color:0xffffff}));
+      clkFace.position.set(0.06, 0.09, 0.3); g.add(clkFace);
+      return g;
+    }
+
+    // 5. Cyber Clickbait Treasure Trap
+    function createBaitItem(){
+      const g = new T.Group();
+      const chest = box(0.65, 0.38, 0.45, 0xb45309); chest.position.set(0, 0.19, 0); g.add(chest);
+      const goldTrim = box(0.67, 0.07, 0.47, 0xfde047); goldTrim.position.set(0, 0.26, 0); g.add(goldTrim);
+      const gem = new T.Mesh(new T.OctahedronGeometry(0.17), new T.MeshStandardMaterial({
+        color:0x06b6d4, emissive:0x0891b2, emissiveIntensity:1.2, metalness:0.9, roughness:0.1
+      }));
+      gem.position.set(0, 0.5, 0); g.add(gem);
+      const hookMat = new T.MeshStandardMaterial({color:0xef4444, metalness:0.8, roughness:0.2});
+      const hook = new T.Mesh(new T.TorusGeometry(0.22, 0.035, 8, 16, Math.PI * 1.3), hookMat);
+      hook.position.set(0, 0.78, 0); hook.rotation.z = Math.PI; g.add(hook);
+      return g;
+    }
+
+    const itemBuilders = [
+      createMarsItem,
+      createKindnessItem,
+      createCodingItem,
+      createSleepItem,
+      createBaitItem
+    ];
+
+    // =====================================================================
+    // SCENARIO DEFINITIONS & SIMULATION
+    // =====================================================================
+    const scenarios = [
+      {
+        title: "Science Project on Mars",
+        prompt: "You need facts & research for tomorrow's science report about the Mars Rover.",
+        goodText: "Search educational science articles & encyclopedia",
+        goodDesc: "Curated websites give authentic facts, planetary maps, and reliable space history.",
+        badText: "Doomscroll random dance reels for 2+ hours",
+        badDesc: "Endless short videos waste your project time and leave your homework blank.",
+        xp: 25,
+        msg: "Smart Research! Educational archives provide accurate facts and build deep knowledge."
+      },
+      {
+        title: "Group Chat Meme Alert",
+        prompt: "A hurtful meme mocking a classmate's appearance is circulating in the school group chat.",
+        goodText: "Stop & Delete: Protect classmate & report unkindness",
+        goodDesc: "Stopping the chain protects a friend's dignity and stops toxic cyberbullying.",
+        badText: "Forward it to 5 other group chats to look cool",
+        badDesc: "Forwarding spreads humiliation and harms your classmate deeply.",
+        xp: 25,
+        msg: "Digital Empathy Hero! Thinking before forwarding creates a safe, kind internet for everyone."
+      },
+      {
+        title: "YouTube Coding Tutorial",
+        prompt: "You discover a high-quality video showing how to code a custom platformer game.",
+        goodText: "Follow along & build your own game project",
+        goodDesc: "Writing real code transforms you from a passive consumer into an active digital creator.",
+        badText: "Leave video on mute while mindlessly gaming",
+        badDesc: "Passive background noise doesn't build any actual coding mastery.",
+        xp: 25,
+        msg: "Creator Superpower! Hands-on programming and digital making builds real-world skills."
+      },
+      {
+        title: "10:30 PM Late Night Stream",
+        prompt: "Your favorite streamer goes live at 10:30 PM on a school night.",
+        goodText: "Go to sleep on time & catch highlight replay tomorrow",
+        goodDesc: "Resting your brain guarantees energy and sharp focus for school tomorrow.",
+        badText: "Stay awake until 2:00 AM straining your eyes",
+        badDesc: "Blue light disrupts sleep cycles, causing brain fatigue and headaches tomorrow.",
+        xp: 25,
+        msg: "Health Balance Champion! Sleep is irreplaceable, and videos will always be there tomorrow."
+      },
+      {
+        title: "Free 10,000 Diamonds Popup Trap",
+        prompt: "A flashy gaming popup shouts: 'Enter your password to claim 10,000 FREE Diamonds NOW!'",
+        goodText: "Close popup immediately & keep password private",
+        goodDesc: "Legitimate games never ask for your private credentials in popups.",
+        badText: "Type your account login and password",
+        badDesc: "Entering your credentials gives hackers instant control of your account.",
+        xp: 25,
+        msg: "Cyber Shield Activated! Spotting phishing traps keeps your digital accounts impenetrable."
+      }
+    ];
+
+    const {b, g} = bringKids(root, -2.4, 0.7, 2.4, 0.7, 0.25);
+    camera.position.set(0, 3.6, 7.2); Cam.look.set(0, 1.6, -0.5);
+
+    let currentScenario = 0;
+    let activeItemMesh = null;
+    let focusScore = 0;
+
+    // Background procedural rotation and hover float for active item
+    onFrame((t, dt)=>{
+      if(holoBeam) holoBeam.rotation.y = t * 0.5;
+      if(activeItemMesh){
+        activeItemMesh.rotation.y = t * 0.85;
+      }
+    });
+
     const introDlg = [
       {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_013.mp3', text:"Here come different internet habits. Some are great… some, not so good."},
       {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_014.mp3', text:"Easy! Drag each one into GOOD CHOICE or NOT SO GOOD. Let’s sort them!"}
     ];
-    
+
+    function startSimulation(){
+      loadScenario(0);
+    }
+
+    function loadScenario(idx){
+      if(idx >= scenarios.length){
+        finishChapter();
+        return;
+      }
+      currentScenario = idx;
+      const sc = scenarios[idx];
+
+      // Spawn 3D Hologram Item on Center Podium
+      if(activeItemMesh && activeItemMesh.parent) activeItemMesh.parent.remove(activeItemMesh);
+      
+      const builder = itemBuilders[idx % itemBuilders.length];
+      activeItemMesh = builder();
+      activeItemMesh.position.set(0, 0.5, -0.6);
+      activeItemMesh.scale.set(0.01, 0.01, 0.01);
+      root.add(activeItemMesh);
+
+      // Smooth rise & scale animation
+      if(SFX.whoosh) SFX.whoosh();
+      tween(activeItemMesh.position, {y: 2.2}, 0.6, easeOut);
+      tween(activeItemMesh.scale, {x: 1.25, y: 1.25, z: 1.25}, 0.6, easeBack);
+
+      // Character attention
+      b.pose = 'present'; b.expr = 'happy';
+      g.pose = 'point'; g.expr = 'excited';
+
+      renderScenarioCard(idx);
+    }
+
+    function renderScenarioCard(idx){
+      clearUI();
+      const sc = scenarios[idx];
+
+      const hud = el('div', 'sim-hud');
+      hud.style.cssText = `
+        position: fixed;
+        top: 68px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(14px);
+        border: 2px solid #93c5fd;
+        border-radius: 20px;
+        padding: 6px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+        z-index: 85;
+      `;
+      hud.innerHTML = `
+        <div style="font-weight:900;color:#1e3a8a;font-size:13.5px;">⭐ DIGITAL SMARTNESS: ${focusScore}%</div>
+        <div style="width:140px;height:10px;background:#e2e8f0;border-radius:10px;overflow:hidden;">
+          <div style="width:${focusScore}%;height:100%;background:linear-gradient(90deg,#10b981,#3b82f6);transition:width .4s ease;"></div>
+        </div>
+        <div style="font-weight:800;color:#64748b;font-size:12.5px;">Scenario ${idx + 1} of ${scenarios.length}</div>
+      `;
+      addUI(hud);
+
+      const card = el('div', 'scenario-sim-card');
+      card.style.cssText = `
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(18px);
+        border: 3px solid #3b82f6;
+        border-radius: 24px;
+        padding: 16px 24px 14px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.32);
+        max-width: 740px;
+        width: 92%;
+        text-align: center;
+        z-index: 90;
+        animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+      `;
+
+      card.innerHTML = `
+        <div style="display:inline-block;padding:3px 12px;background:#eff6ff;color:#2563eb;border-radius:14px;font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+          ⚡ Interactive Habit Sorter • Scenario ${idx + 1}/${scenarios.length}
+        </div>
+        <h3 style="margin:0 0 4px;color:#0f172a;font-size:19px;font-weight:900;">${sc.title}</h3>
+        <p style="margin:0 0 12px;color:#334155;font-size:14px;line-height:1.45;font-weight:600;">
+          ${sc.prompt}
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;">
+          <!-- GOOD CHOICE BUTTON -->
+          <button id="btnGoodChoice" style="
+            background: linear-gradient(180deg, #ecfdf5, #d1fae5);
+            border: 2.5px solid #10b981;
+            border-radius: 16px;
+            padding: 12px 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            box-shadow: 0 6px 18px rgba(16,185,129,0.22);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          ">
+            <div style="display:flex;align-items:center;gap:6px;color:#047857;font-weight:900;font-size:14px;">
+              <span style="font-size:18px;">✅</span> GOOD CHOICE
+            </div>
+            <div style="color:#065f46;font-weight:800;font-size:13px;line-height:1.35;">
+              ${sc.goodText}
+            </div>
+            <div style="color:#047857;font-size:11.5px;opacity:0.85;line-height:1.3;">
+              ${sc.goodDesc}
+            </div>
+          </button>
+
+          <!-- NOT SO GOOD BUTTON -->
+          <button id="btnBadChoice" style="
+            background: linear-gradient(180deg, #fef2f2, #fee2e2);
+            border: 2.5px solid #ef4444;
+            border-radius: 16px;
+            padding: 12px 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            box-shadow: 0 6px 18px rgba(239,68,68,0.22);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          ">
+            <div style="display:flex;align-items:center;gap:6px;color:#b91c1c;font-weight:900;font-size:14px;">
+              <span style="font-size:18px;">❌</span> NOT SO GOOD
+            </div>
+            <div style="color:#991b1b;font-weight:800;font-size:13px;line-height:1.35;">
+              ${sc.badText}
+            </div>
+            <div style="color:#b91c1c;font-size:11.5px;opacity:0.85;line-height:1.3;">
+              ${sc.badDesc}
+            </div>
+          </button>
+        </div>
+      `;
+
+      const btnGood = card.querySelector('#btnGoodChoice');
+      const btnBad = card.querySelector('#btnBadChoice');
+
+      // Click GOOD CHOICE -> Simulate item flying to Good Sanctuary
+      btnGood.onclick = () => {
+        executeGoodSimulation(idx, card);
+      };
+
+      // Click BAD CHOICE -> Show warning simulation & explain why
+      btnBad.onclick = () => {
+        executeBadSimulation(idx, card);
+      };
+
+      addUI(card);
+    }
+
+    function executeGoodSimulation(idx, card){
+      const sc = scenarios[idx];
+      if(SFX.coin) SFX.coin();
+      if(SFX.correct) SFX.correct();
+      addXP(sc.xp);
+      focusScore = Math.min(100, focusScore + 20);
+
+      // Disable buttons
+      card.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      // Animate Item Trajectory to Left Pedestal Rack
+      const targetSlot = trophySlots[idx % trophySlots.length];
+      if(activeItemMesh){
+        tween(activeItemMesh.position, { x: targetSlot[0], y: targetSlot[1], z: targetSlot[2] }, 0.85, easeOut);
+        tween(activeItemMesh.scale, { x: 0.7, y: 0.7, z: 0.7 }, 0.85, easeOut);
+      }
+
+      // Kids Celebration Animation
+      b.pose = 'cheer'; b.expr = 'excited';
+      g.pose = 'wave'; g.expr = 'happy';
+
+      // Green Pedestal Energy Glow
+      const beamGlow = sph(0.35, 0x10b981, {emissive:0x10b981, emissiveIntensity:1.5});
+      beamGlow.position.set(-3.5, 1.4, -0.6);
+      root.add(beamGlow);
+      tween(beamGlow.scale, {x: 2.2, y: 2.2, z: 2.2}, 0.6, easeOut, () => {
+        if(beamGlow.parent) beamGlow.parent.remove(beamGlow);
+      });
+
+      // Show Educational Success Banner inside Card
+      card.innerHTML = `
+        <div style="padding:14px;background:#ecfdf5;border:2.5px solid #10b981;border-radius:18px;color:#047857;text-align:center;">
+          <div style="font-size:20px;font-weight:900;margin-bottom:4px;">🌟 +${sc.xp} XP • EXCELLENT CHOICE!</div>
+          <div style="font-size:14px;font-weight:800;line-height:1.45;">${sc.msg}</div>
+        </div>
+      `;
+
+      setTimeout(()=>{
+        loadScenario(idx + 1);
+      }, 1800);
+    }
+
+    function executeBadSimulation(idx, card){
+      const sc = scenarios[idx];
+      if(SFX.buzz) SFX.buzz();
+
+      // Kids concerned gesture
+      b.pose = 'think'; b.expr = 'thinking';
+      g.pose = 'worried'; g.expr = 'worried';
+
+      // Red Hazard Flash on Right Pedestal
+      const hazardGlow = sph(0.35, 0xef4444, {emissive:0xef4444, emissiveIntensity:1.5});
+      hazardGlow.position.set(3.5, 1.4, -0.6);
+      root.add(hazardGlow);
+      tween(hazardGlow.scale, {x: 2.2, y: 2.2, z: 2.2}, 0.5, easeOut, () => {
+        if(hazardGlow.parent) hazardGlow.parent.remove(hazardGlow);
+      });
+
+      toast("⚠️ That habit wastes time and drains energy! Tap GOOD CHOICE to build healthy digital superpowers.");
+    }
+
+    function finishChapter(){
+      clearUI();
+      b.pose = 'cheer'; b.expr = 'excited';
+      g.pose = 'wave'; g.expr = 'happy';
+
+      const postDlg = [
+        {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_015.mp3', text:"That was easier than I thought! Good and not-so-good aren’t so hard to tell apart."},
+        {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_016.mp3', text:"Sometimes though… the SAME thing can be good OR bad. Like gaming — a little is fun, too much isn’t."},
+        {who:'boy', expr:'thinking', pose:'think', audio:'audio/boy_017.mp3', text:"Ohh. So it’s about balance. Let’s test that next!"}
+      ];
+      runDialogue(postDlg, ()=>{
+        api.done({msg:"Superb! You solved all 5 interactive scenarios and proved you can distinguish helpful from risky internet habits."});
+      });
+    }
+
     runDialogue(introDlg, ()=>{
-      quizChain([
-        {
-          question: "Scenario 1: You want to research a school science project about Mars. What is the best choice?",
-          options: ["✅ Search educational websites and science articles", "❌ Watch random dance reels for 2 hours"],
-          answer: 0, xp: 20,
-          afterMsg: "Educational sites and curated articles give reliable facts for schoolwork!"
-        },
-        {
-          question: "Scenario 2: A funny meme is going around that makes fun of a classmate. What is the right choice?",
-          options: ["❌ Forward it to all group chats to be popular", "✅ Do not forward it — delete it and protect kindness online"],
-          answer: 1, xp: 20,
-          afterMsg: "Thinking before forwarding stops hurtful cyberbullying!"
-        },
-        {
-          question: "Scenario 3: You find an engaging coding tutorial on YouTube. How do you get the most value?",
-          options: ["✅ Follow along and build your own game project", "❌ Just leave it running in background while playing games"],
-          answer: 0, xp: 20,
-          afterMsg: "Hands-on creating and coding builds real skills for the future!"
-        },
-        {
-          question: "Scenario 4: Your favorite streamer starts a late-night livestream at 10:30 PM on a school night. What do you do?",
-          options: ["❌ Stay up until 1:00 AM watching the entire stream", "✅ Go to sleep on time and catch the highlight replay tomorrow"],
-          answer: 1, xp: 20,
-          afterMsg: "Sleep is essential! Replays will always be there tomorrow."
-        }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_015.mp3', text:"That was easier than I thought! Good and not-so-good aren’t so hard to tell apart."},
-          {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_016.mp3', text:"Sometimes though… the SAME thing can be good OR bad. Like gaming — a little is fun, too much isn’t."},
-          {who:'boy', expr:'thinking', pose:'think', audio:'audio/boy_017.mp3', text:"Ohh. So it’s about balance. Let’s test that next!"}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Superb! You solved all 4 scenarios and proved you can distinguish helpful from risky internet habits."});
-        });
-      }, api);
+      startSimulation();
     });
   }
 });
 
 /* =====================================================================
    CHAPTER 05: The Internet Balance Scale
-   ===================================================================== */
-registerChapter({
+   ===================================================================== */registerChapter({
   id:'ch5', title:'The Internet Balance Scale', logtag:'BALANCE',
   bg1:'#7bbef0', bg2:'#fff3cf',
   endTitle:'Chapter 5 Complete!',
