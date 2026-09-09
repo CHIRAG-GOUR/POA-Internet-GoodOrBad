@@ -1,0 +1,252 @@
+[
+  {
+    "who": "boy",
+    "audio": "audio/boy_000.mp3",
+    "text": "I use the internet almost every day — look, my laptop!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_001.mp3",
+    "text": "Wait... is the internet ALWAYS good? Or are there bad things too?"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_002.mp3",
+    "text": "Let's find out — together. Come on, explorer!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_003.mp3",
+    "text": "Whoa — the whole internet is waiting for us!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_004.mp3",
+    "text": "Yes! But remember our question — is it ALWAYS good? Let's keep our eyes open."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_005.mp3",
+    "text": "So when I send a message, it travels all the way to a global server and back?!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_006.mp3",
+    "text": "Exactly! Tap the glowing Data Packet to watch it travel forward and bring back the answer!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_007.mp3",
+    "text": "Watch how fast it zooms from my laptop to the server and returns!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_008.mp3",
+    "text": "Whoa! Look at all the things we can do on the internet!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_009.mp3",
+    "text": "And we can CREATE and play too — not just watch. Tap every building to step inside and explore!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_010.mp3",
+    "text": "We can learn and CREATE almost anything here. This is amazing!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_011.mp3",
+    "text": "It really is. But… if the internet is this powerful, could some parts be risky too?"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_012.mp3",
+    "text": "Hmm. Let’s keep exploring and find out."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_013.mp3",
+    "text": "Here come different internet habits. Some are great… some, not so good."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_014.mp3",
+    "text": "Easy! Drag each one into GOOD CHOICE or NOT SO GOOD. Let’s sort them!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_015.mp3",
+    "text": "That was easier than I thought! Good and not-so-good aren’t so hard to tell apart."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_016.mp3",
+    "text": "Sometimes though… the SAME thing can be good OR bad. Like gaming — a little is fun, too much isn’t."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_017.mp3",
+    "text": "Ohh. So it’s about balance. Let’s test that next!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_018.mp3",
+    "text": "This is the Internet Balance Scale. Benefits on the left, risks on the right."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_019.mp3",
+    "text": "So if I add too many risky habits… the scale tips! Let’s test our moderation."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_020.mp3",
+    "text": "So the same activity can be good OR bad — it depends how much!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_021.mp3",
+    "text": "Exactly. Too much of anything tips the balance. The trick is moderation."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_022.mp3",
+    "text": "Sometimes after staring at a screen for hours, my eyes sting, get red, and I get a headache."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_023.mp3",
+    "text": "Let us test our 3D Vision Simulator to see exactly what happens to eyes during long screen time and how to fix it!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_025.mp3",
+    "text": "Welcome to the Privacy Locker! Some personal data must be locked in the Cyber Vault forever."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_026.mp3",
+    "text": "While other things like hobbies and avatars are fun to share. Let us sort them and see what happens!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_027.mp3",
+    "text": "Locked and safe! My passwords and address are guarded in the Cyber Vault forever."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_028.mp3",
+    "text": "And my gamer avatar is ready for the world. Let us check out Scam Alley next!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_029.mp3",
+    "text": "I just opened my messaging app on my laptop, and strange chat popups are appearing!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_030.mp3",
+    "text": "Careful Aarav! Scammers use sneaky tricks. Let us inspect each message and reply wisely!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_033.mp3",
+    "text": "Outstanding work! You stopped all three scam traps before they could do any harm."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_034.mp3",
+    "text": "Now let us see what happens when strangers message us during online gaming!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_035.mp3",
+    "text": "We just launched PixelQuest Arena in our digital lounge. An unknown player started messaging our avatar."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_036.mp3",
+    "text": "Let us deploy our live in-game privacy tools to defend our identity and safety!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_037.mp3",
+    "text": "All 3 stranger traps defeated! Personal identity, photo, and location stayed 100% safe!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_038.mp3",
+    "text": "That uncomfortable feeling is the warning alarm. Block, report, and always tell trusted adults."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_039.mp3",
+    "text": "Welcome to the Truth Forensic Lab! Four viral news headlines need investigation."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_040.mp3",
+    "text": "Let us analyze the evidence, fill our Truth & Falsehood Meters, and determine our Forensic Level!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_041.mp3",
+    "text": "Both meters are at 100%! We can spot fake viral stories and verify real science anytime."
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_042.mp3",
+    "text": "Now let us see the entire global journey of the internet across our panoramic city!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_043.mp3",
+    "text": "LOOK AT THE ENTIRE PANORAMIC DIGITAL CITY! We can see our home, the city 5G tower, the ocean cable terminal, and our school!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_044.mp3",
+    "text": "Let us interactively route a data packet across the entire global internet highway!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_045.mp3",
+    "text": "The internet connects our whole world at the speed of light."
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_046.mp3",
+    "text": "And we have the superpowers to use it safely and creatively. Time to seal our rulebook!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_051.mp3",
+    "text": "It is time to draft our 5 Golden Commandments of Digital Citizenship!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_052.mp3",
+    "text": "Let us seal every rule onto our classroom golden charter!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_054.mp3",
+    "text": "Our Golden Digital Rulebook is complete! Ready for the Final Challenge Arena!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_055.mp3",
+    "text": "Let us test everything we learned!"
+  },
+  {
+    "who": "girl",
+    "audio": "audio/girl_056.mp3",
+    "text": "We did it! We explored the entire internet from undersea cables to cyber defense!"
+  },
+  {
+    "who": "boy",
+    "audio": "audio/boy_057.mp3",
+    "text": "One final moment to seal our Master Explorer badge — let’s finish strong!"
+  }
+]
