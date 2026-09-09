@@ -230,7 +230,7 @@
   <div class="hud-chip"><span class="ic">📖</span><span class="chapname" id="chapName">—</span></div>
   <div class="spacer"></div>
   <div class="progwrap"><div class="progbar" id="progBar"></div></div>
-  <button class="iconbtn" id="btnReplay" title="Replay dialogue">🔁</button>
+  <button class="iconbtn" id="btnFullscreen" title="Toggle Fullscreen">⛶</button>
   <button class="iconbtn" id="btnMute" title="Sound on/off">🔊</button>
   <button class="iconbtn" id="btnTeacher" title="Teacher panel">🎓</button>
 </div>
@@ -522,14 +522,20 @@ const SFX={
   badge:()=>{beep(660,0.12,'sine',0.12);setTimeout(()=>beep(880,0.14,'sine',0.12),90);setTimeout(()=>beep(1180,0.16,'sine',0.10),190);},
   buzz:()=>{beep(300,0.18,'sawtooth',0.09,150);},
   good:()=>{beep(660,0.12,'sine',0.12);setTimeout(()=>beep(880,0.14,'sine',0.12),90);setTimeout(()=>beep(1180,0.16,'sine',0.10),190);},
+  correct:()=>{beep(660,0.12,'sine',0.12);setTimeout(()=>beep(880,0.14,'sine',0.12),90);setTimeout(()=>beep(1180,0.16,'sine',0.10),190);},
   bad:()=>{beep(300,0.18,'sawtooth',0.09,150);},
   warn:()=>{beep(440,0.14,'square',0.08);setTimeout(()=>beep(440,0.14,'square',0.08),200);},
   pop:()=>beep(720,0.09,'sine',0.11,900),
   type:()=>beep(1200,0.03,'square',0.03),
   packet:()=>beep(880,0.05,'sine',0.05,1400),
   whoosh:()=>beep(200,0.4,'sine',0.06,600),
+  swoosh:()=>beep(240,0.3,'sine',0.06,700),
+  coin:()=>beep(988,0.1,'sine',0.12,1318),
+  clunk:()=>beep(140,0.15,'triangle',0.15,80),
+  chime:()=>{beep(784,0.15,'sine',0.10);setTimeout(()=>beep(1047,0.2,'sine',0.10),120);},
   chapter:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.18,'sine',0.10),i*110));},
   win:()=>{[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'triangle',0.11),i*130));},
+  fanfare:()=>{[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'triangle',0.11),i*130));}
 };
 window.Sound = SFX;
 const Sound = SFX;
@@ -2612,10 +2618,12 @@ registerChapter({
               return;
             } else if(isReturnTrip && leg === waypointsReturn.length - 1){
               packetGroup.position.set(-4.5, 0.85, 0);
-              SFX.fanfare();
+              try { if(SFX.fanfare) SFX.fanfare(); else if(SFX.win) SFX.win(); } catch(e){}
               addXP(75);
               toast("🎉 Message Delivered & Loaded in 0.02 seconds!");
-              api.done({msg:"Data packet traveled to server and returned successfully with your answer!"});
+              setTimeout(()=>{
+                api.done({msg:"Data packet traveled to server and returned successfully with your answer!"});
+              }, 400);
               return;
             }
           }
@@ -4466,13 +4474,28 @@ function boot(){
   }
 
   // Wire Top HUD Buttons
-  const btnReplay = document.getElementById('btnReplay');
-  if(btnReplay){
-    btnReplay.onclick = () => {
+  const btnFS = document.getElementById('btnFullscreen');
+  if(btnFS){
+    btnFS.onclick = () => {
       try { SFX.click(); } catch(e){}
-      if(_dlg && _dlg._replay) _dlg._replay();
+      if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen().catch(()=>{});
+        btnFS.textContent = '🗗';
+        btnFS.title = 'Exit Fullscreen';
+      } else {
+        document.exitFullscreen().catch(()=>{});
+        btnFS.textContent = '⛶';
+        btnFS.title = 'Toggle Fullscreen';
+      }
     };
   }
+  document.addEventListener('fullscreenchange', () => {
+    const fsBtn = document.getElementById('btnFullscreen');
+    if(fsBtn){
+      fsBtn.textContent = document.fullscreenElement ? '🗗' : '⛶';
+      fsBtn.title = document.fullscreenElement ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+    }
+  });
 
   const btnMute = document.getElementById('btnMute');
   if(btnMute){
@@ -8751,13 +8774,28 @@ function boot(){
   }
 
   // Wire Top HUD Buttons
-  const btnReplay = document.getElementById('btnReplay');
-  if(btnReplay){
-    btnReplay.onclick = () => {
+  const btnFS = document.getElementById('btnFullscreen');
+  if(btnFS){
+    btnFS.onclick = () => {
       try { SFX.click(); } catch(e){}
-      if(_dlg && _dlg._replay) _dlg._replay();
+      if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen().catch(()=>{});
+        btnFS.textContent = '🗗';
+        btnFS.title = 'Exit Fullscreen';
+      } else {
+        document.exitFullscreen().catch(()=>{});
+        btnFS.textContent = '⛶';
+        btnFS.title = 'Toggle Fullscreen';
+      }
     };
   }
+  document.addEventListener('fullscreenchange', () => {
+    const fsBtn = document.getElementById('btnFullscreen');
+    if(fsBtn){
+      fsBtn.textContent = document.fullscreenElement ? '🗗' : '⛶';
+      fsBtn.title = document.fullscreenElement ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+    }
+  });
 
   const btnMute = document.getElementById('btnMute');
   if(btnMute){
