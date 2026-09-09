@@ -1753,53 +1753,631 @@ const Props={
   },
 
   /* ---- Classroom Environment ---- */
-  classroomEnv(root){
-    // Parquet Floor
-    const floor=box(14,0.2,12,0xd4a373); floor.position.y=-0.1; floor.receiveShadow=true; root.add(floor);
-    const skirtL=box(0.12,0.3,12,0x8b5a2b); skirtL.position.set(-7,0.1,0); root.add(skirtL);
-    const skirtR=box(0.12,0.3,12,0x8b5a2b); skirtR.position.set(7,0.1,0); root.add(skirtR);
-    const skirtB=box(14,0.3,0.12,0x8b5a2b); skirtB.position.set(0,0.1,-6); root.add(skirtB);
+  classroomFloorTexture(){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#9e5820'; ctx.fillRect(0,0,1024,1024);
     
-    // Walls
-    const backWall=box(14,6.2,0.2,0xf0f7ff); backWall.position.set(0,3.0,-6); root.add(backWall);
-    const leftWall=box(0.2,6.2,12,0xe8f2fe); leftWall.position.set(-7,3.0,0); root.add(leftWall);
-    const rightWall=box(0.2,6.2,12,0xe8f2fe); rightWall.position.set(7,3.0,0); root.add(rightWall);
+    const plankH = 64;
+    const plankW = 256;
+    const colors = ['#8f4b14', '#9e5820', '#ad662b', '#96521a', '#7e3e0d', '#a46025', '#b57033'];
     
-    // Center Blackboard
-    const board=Props.blackboard(6.6,3.4); board.position.set(0,3.2,-5.88); root.add(board);
-    
-    // Windows on left wall
-    [-2.5, 2.5].forEach(wz=>{
-      const wFrame=box(0.1,3.0,2.2,0xffffff); wFrame.position.set(-6.92,3.4,wz); root.add(wFrame);
-      const sky=box(0.05,2.8,2.0,0x90cdf4); sky.position.set(-6.95,3.4,wz); root.add(sky);
-      const paneH=box(0.12,0.08,2.0,0xffffff); paneH.position.set(-6.9,3.4,wz); root.add(paneH);
-      const paneV=box(0.12,2.8,0.08,0xffffff); paneV.position.set(-6.9,3.4,wz); root.add(paneV);
-    });
-    
-    // Bookshelf & Globe on right wall
-    const shelf=box(0.8,3.8,2.8,0x8b5a2b); shelf.position.set(6.4,1.9,-2.5); root.add(shelf);
-    const bookColors=[0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899];
-    for(let sh=0;sh<3;sh++){
-      const sy=0.8+sh*1.1;
-      for(let b=0;b<6;b++){
-        const bk=box(0.4,0.6+Math.random()*0.15,0.08,bookColors[b%bookColors.length]);
-        bk.position.set(6.4,sy,-3.4+b*0.22); root.add(bk);
+    for(let y=0; y<1024; y+=plankH){
+      const row = Math.floor(y/plankH);
+      const offsetX = (row % 2) * (plankW / 2);
+      for(let x=-plankW; x<1024+plankW; x+=plankW){
+        const seed = Math.sin(x*17.3 + y*31.7) * 10000;
+        const colIdx = Math.floor(Math.abs(seed)) % colors.length;
+        ctx.fillStyle = colors[colIdx];
+        ctx.fillRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
+        
+        ctx.strokeStyle = 'rgba(40,15,0,0.18)';
+        ctx.lineWidth = 1.4;
+        for(let g=0; g<3; g++){
+          const gy = y + 12 + g * 18;
+          ctx.beginPath();
+          ctx.moveTo(x + offsetX + 2, gy);
+          ctx.bezierCurveTo(x + offsetX + 80, gy + (Math.sin(x+g)*3), x + offsetX + 180, gy - (Math.cos(y+g)*3), x + offsetX + plankW - 2, gy);
+          ctx.stroke();
+        }
+        
+        ctx.strokeStyle = 'rgba(35,12,0,0.65)';
+        ctx.lineWidth = 2.4;
+        ctx.strokeRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
       }
     }
-    const globeStand=cyl(0.08,0.12,0.15,0xd97706,12); globeStand.position.set(6.4,3.9,-2.5); root.add(globeStand);
-    const globeSphere=sph(0.24,0x3b82f6); globeSphere.position.set(6.4,4.2,-2.5); root.add(globeSphere);
+    const tex=new T.CanvasTexture(cv);
+    tex.wrapS = T.RepeatWrapping; tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(4.0, 3.0); tex.anisotropy = 4;
+    return tex;
+  },
+
+  /* ---- Wainscoting / Wood Paneling Texture ---- */
+  wainscotTexture(){
+    const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#6b3612'; ctx.fillRect(0,0,512,512);
+    const slatW = 32;
+    for(let x=0; x<512; x+=slatW){
+      ctx.fillStyle = (Math.floor(x/slatW) % 2 === 0)? '#783e16' : '#63310f';
+      ctx.fillRect(x+1, 0, slatW-2, 512);
+      ctx.strokeStyle = 'rgba(25,8,0,0.65)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x+1, 0, slatW-2, 512);
+    }
+    const tex=new T.CanvasTexture(cv);
+    tex.wrapS = T.RepeatWrapping; tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(8, 1); tex.anisotropy = 4;
+    return tex;
+  },
+
+  /* ---- Cork Noticeboard Texture (High-Res 1024x1024) ---- */
+  corkTexture(type){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#c88e4d'; ctx.fillRect(0,0,1024,1024);
+    ctx.fillStyle='rgba(90,45,10,0.25)';
+    for(let i=0; i<1400; i++){
+      ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*5+1, Math.random()*5+1);
+    }
     
-    // Clock
-    const clockBody=cyl(0.45,0.45,0.06,0xffffff,24); clockBody.rotation.x=Math.PI/2; clockBody.position.set(0,5.2,-5.88); root.add(clockBody);
-    const clockRim=new T.Mesh(new T.TorusGeometry(0.45,0.04,8,24), mat(0x1e293b)); clockRim.position.set(0,5.2,-5.86); root.add(clockRim);
-    const handH=box(0.03,0.24,0.02,0x1e293b); handH.position.set(0.06,5.28,-5.84); handH.rotation.z=-0.6; root.add(handH);
-    const handM=box(0.02,0.32,0.02,0x1e293b); handM.position.set(-0.08,5.28,-5.84); handM.rotation.z=0.8; root.add(handM);
+    if(type === 'rules'){
+      ctx.fillStyle='#0f172a';
+      ctx.font='bold 52px "Fredoka", sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('💡 SMART DIGITAL HABITS', 512, 80);
+      
+      // Note 1: Passwords (Yellow)
+      ctx.fillStyle='#fef08a'; ctx.fillRect(48, 120, 430, 380);
+      ctx.strokeStyle='#ca8a04'; ctx.lineWidth=4; ctx.strokeRect(48, 120, 430, 380);
+      ctx.fillStyle='#eab308'; ctx.beginPath(); ctx.arc(263, 145, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#451a03'; ctx.font='bold 38px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('🔒 Passwords Safe', 76, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Keep passwords private', 76, 265);
+      ctx.fillText('• Never share with friends', 76, 315);
+      ctx.fillText('• Use numbers & symbols', 76, 365);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#b45309';
+      ctx.fillText('Shield your accounts! 🛡️', 76, 435);
+      
+      // Note 2: Screen Balance (Cyan)
+      ctx.fillStyle='#bae6fd'; ctx.fillRect(546, 120, 430, 380);
+      ctx.strokeStyle='#0284c7'; ctx.lineWidth=4; ctx.strokeRect(546, 120, 430, 380);
+      ctx.fillStyle='#0284c7'; ctx.beginPath(); ctx.arc(761, 145, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#0c4a6e'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('⏱️ Screen Balance', 574, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Follow 20-20-20 rule', 574, 265);
+      ctx.fillText('• Look 20ft away for 20s', 574, 315);
+      ctx.fillText('• Stretch, blink & hydrate', 574, 365);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#0284c7';
+      ctx.fillText('Rest your eyes! 💧✨', 574, 435);
+      
+      // Note 3: Kindness (Green)
+      ctx.fillStyle='#bbf7d0'; ctx.fillRect(48, 540, 430, 420);
+      ctx.strokeStyle='#16a34a'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 430, 420);
+      ctx.fillStyle='#16a34a'; ctx.beginPath(); ctx.arc(263, 565, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#052e16'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('🤝 Kindness Online', 76, 625);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Be polite & encouraging', 76, 685);
+      ctx.fillText('• Say helpful, kind words', 76, 735);
+      ctx.fillText('• Stand up to cyberbullies', 76, 785);
+      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#15803d';
+      ctx.fillText('Make friends happy! 🌟', 76, 855);
+      
+      // Note 4: Create & Learn (Pink)
+      ctx.fillStyle='#fbcfe8'; ctx.fillRect(546, 540, 430, 420);
+      ctx.strokeStyle='#db2777'; ctx.lineWidth=4; ctx.strokeRect(546, 540, 430, 420);
+      ctx.fillStyle='#db2777'; ctx.beginPath(); ctx.arc(761, 565, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#500724'; ctx.font='bold 38px sans-serif';
+      ctx.fillText('🎨 Create & Explore', 574, 625);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Code exciting games 💻', 574, 685);
+      ctx.fillText('• Paint digital artworks 🎨', 574, 735);
+      ctx.fillText('• Discover space science 🚀', 574, 785);
+      ctx.font='bold 34px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#9d174d';
+      ctx.fillText('⭐ Be a Creator! ⭐', 761, 865);
+    } else {
+      ctx.fillStyle='#0f172a';
+      ctx.font='bold 52px "Fredoka", sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('🌟 STAR EXPLORERS 🌟', 512, 80);
+      
+      // Golden Certificate
+      ctx.fillStyle='#ffffff'; ctx.fillRect(48, 120, 928, 380);
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=6; ctx.strokeRect(56, 128, 912, 364);
+      ctx.fillStyle='#b45309'; ctx.font='bold 42px sans-serif';
+      ctx.fillText('🏆 CLASS 6-A DIGITAL HONORS 🏆', 512, 205);
+      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#334155';
+      ctx.fillText('Awarded for 100% safe, curious & creative digital exploration!', 512, 265);
+      ctx.font='bold 46px sans-serif'; ctx.fillStyle='#ea580c';
+      ctx.fillText('⭐ Aarav • Meera • Explorer ⭐', 512, 345);
+      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#059669';
+      ctx.fillText('Certified Internet Smart Champion 🎓', 512, 415);
+      
+      // Schedule Card
+      ctx.fillStyle='#fef3c7'; ctx.fillRect(48, 540, 928, 420);
+      ctx.strokeStyle='#d97706'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 928, 420);
+      ctx.fillStyle='#78350f'; ctx.font='bold 40px sans-serif';
+      ctx.fillText('📅 DIGITAL LAB QUESTS', 512, 615);
+      ctx.font='bold 30px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#1e293b';
+      ctx.fillText('• Chapter 01: Welcome & Connecting to the Web', 90, 685);
+      ctx.fillText('• Chapter 02: How Data Packets Travel Globally', 90, 745);
+      ctx.fillText('• Chapter 03: Exploring Digital City Hubs', 90, 805);
+      ctx.fillText('• Chapter 04: Habits & The Internet Balance Scale', 90, 865);
+      ctx.font='38px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#d97706';
+      ctx.fillText('⭐  ⭐  ⭐  ⭐  ⭐', 512, 925);
+    }
+    const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
+  },
+
+  /* ---- Window Outdoor Courtyard Texture ---- */
+  outdoorSkyTexture(){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
+    const ctx=cv.getContext('2d');
     
-    // Lighting
-    const ceilingLight=new T.PointLight(0xfffaed, 1.2, 14); ceilingLight.position.set(0,5.0,0); root.add(ceilingLight);
-    const boardSpot=new T.SpotLight(0xffffff, 1.0, 10, Math.PI/4, 0.4);
-    boardSpot.position.set(0,5.2,-3.0); boardSpot.target.position.set(0,3.2,-5.88);
-    root.add(boardSpot); root.add(boardSpot.target);
+    const skyGrad=ctx.createLinearGradient(0,0,0,1024);
+    skyGrad.addColorStop(0,'#0284c7');
+    skyGrad.addColorStop(0.4,'#38bdf8');
+    skyGrad.addColorStop(0.7,'#7dd3fc');
+    skyGrad.addColorStop(1,'#bae6fd');
+    ctx.fillStyle=skyGrad; ctx.fillRect(0,0,1024,1024);
+    
+    const sunGrad=ctx.createRadialGradient(720, 220, 20, 720, 220, 180);
+    sunGrad.addColorStop(0, '#ffffff');
+    sunGrad.addColorStop(0.25, '#fef08a');
+    sunGrad.addColorStop(0.6, 'rgba(253, 224, 71, 0.4)');
+    sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.fillStyle=sunGrad; ctx.beginPath(); ctx.arc(720, 220, 180, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(720, 220, 70, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(720, 220, 45, 0, Math.PI*2); ctx.fill();
+    
+    const drawCloud = (baseX, baseY, s) => {
+      ctx.fillStyle='rgba(255,255,255,0.92)';
+      const puffs = [
+        [0, 0, 40*s], [30*s, -15*s, 48*s], [70*s, -20*s, 56*s], 
+        [110*s, -10*s, 48*s], [140*s, 0, 38*s], [60*s, 10*s, 45*s]
+      ];
+      puffs.forEach(([ox, oy, r]) => {
+        ctx.beginPath(); ctx.arc(baseX + ox, baseY + oy, r, 0, Math.PI*2); ctx.fill();
+      });
+    };
+    drawCloud(80, 220, 1.3);
+    drawCloud(420, 320, 1.0);
+    drawCloud(680, 140, 0.9);
+    
+    ctx.fillStyle='#93c5fd';
+    ctx.beginPath();
+    ctx.moveTo(0, 720);
+    ctx.quadraticCurveTo(250, 580, 500, 680);
+    ctx.quadraticCurveTo(750, 600, 1024, 690);
+    ctx.lineTo(1024, 1024); ctx.lineTo(0, 1024); ctx.fill();
+    
+    ctx.fillStyle='#22c55e'; ctx.fillRect(0, 720, 1024, 304);
+    
+    ctx.fillStyle='#78350f';
+    [[160, 700, 26, 120], [360, 660, 32, 160], [600, 710, 28, 110], [820, 650, 36, 170]].forEach(([tx,ty,tw,th])=>{
+      ctx.fillRect(tx - tw/2, ty, tw, th);
+    });
+    
+    const treeFoliage = [
+      [160, 600, 120, '#15803d', '#16a34a', '#22c55e'],
+      [360, 540, 150, '#14532d', '#15803d', '#16a34a'],
+      [600, 620, 130, '#166534', '#15803d', '#4ade80'],
+      [820, 520, 170, '#14532d', '#16a34a', '#22c55e'],
+      [980, 600, 120, '#15803d', '#22c55e', '#86efac']
+    ];
+    treeFoliage.forEach(([tx, ty, tr, c1, c2, c3]) => {
+      ctx.fillStyle=c1; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle=c2; ctx.beginPath(); ctx.arc(tx - tr*0.2, ty - tr*0.1, tr*0.75, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle=c3; ctx.beginPath(); ctx.arc(tx + tr*0.2, ty - tr*0.25, tr*0.5, 0, Math.PI*2); ctx.fill();
+    });
+    
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=3;
+    [[220,130],[260,115],[480,180],[510,165],[540,175]].forEach(([bx,by])=>{
+      ctx.beginPath();
+      ctx.arc(bx-10, by, 10, Math.PI*1.2, 0);
+      ctx.arc(bx+10, by, 10, Math.PI, Math.PI*1.8);
+      ctx.stroke();
+    });
+    
+    const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
+  },
+
+  /* ---- Full Rich Classroom Environment ---- */
+  classroomEnv(root){
+    const envGroup = new T.Group();
+    envGroup.name = 'classroomEnv';
+    
+    // 1. Hardwood Parquet Floor
+    const floorMat = new T.MeshStandardMaterial({
+      map: Props.classroomFloorTexture(),
+      roughness: 0.60,
+      metalness: 0.05
+    });
+    const floor = new T.Mesh(new T.BoxGeometry(22, 0.2, 18), floorMat);
+    floor.position.set(0, -0.1, 0);
+    floor.receiveShadow = true;
+    envGroup.add(floor);
+    
+    // Dark walnut perimeter skirting baseboards
+    const skirtMat = mat(0x2d1204, {roughness: 0.7});
+    const skirtL = new T.Mesh(new T.BoxGeometry(0.14, 0.32, 18), skirtMat); skirtL.position.set(-10.93, 0.16, 0); envGroup.add(skirtL);
+    const skirtR = new T.Mesh(new T.BoxGeometry(0.14, 0.32, 18), skirtMat); skirtR.position.set(10.93, 0.16, 0); envGroup.add(skirtR);
+    const skirtB = new T.Mesh(new T.BoxGeometry(22, 0.32, 0.14), skirtMat); skirtB.position.set(0, 0.16, -5.93); envGroup.add(skirtB);
+    
+    // 2. Classroom Walls
+    const upperWallMat = mat(0xf5e2be, {roughness: 0.85, metalness: 0.0});
+    const wainscotMat = new T.MeshStandardMaterial({
+      map: Props.wainscotTexture(),
+      roughness: 0.75,
+      metalness: 0.05
+    });
+    const moldingMat = mat(0x3e1c08, {roughness: 0.7});
+    const crownMat = mat(0xd4c2a4, {roughness: 0.85});
+    
+    // --- Back Wall ---
+    const backLower = new T.Mesh(new T.BoxGeometry(22, 1.6, 0.18), wainscotMat);
+    backLower.position.set(0, 0.8, -5.91);
+    envGroup.add(backLower);
+    
+    const backMolding = new T.Mesh(new T.BoxGeometry(22, 0.09, 0.08), moldingMat);
+    backMolding.position.set(0, 1.62, -5.87);
+    envGroup.add(backMolding);
+    
+    const backUpper = new T.Mesh(new T.BoxGeometry(22, 4.6, 0.18), upperWallMat);
+    backUpper.position.set(0, 3.9, -5.91);
+    envGroup.add(backUpper);
+    
+    const backCrown = new T.Mesh(new T.BoxGeometry(22, 0.16, 0.12), crownMat);
+    backCrown.position.set(0, 6.12, -5.86);
+    envGroup.add(backCrown);
+    
+    // --- Left Wall ---
+    const leftLower = new T.Mesh(new T.BoxGeometry(0.18, 1.6, 18), wainscotMat);
+    leftLower.position.set(-10.91, 0.8, 0);
+    envGroup.add(leftLower);
+    
+    const leftMolding = new T.Mesh(new T.BoxGeometry(0.08, 0.09, 18), moldingMat);
+    leftMolding.position.set(-10.87, 1.62, 0);
+    envGroup.add(leftMolding);
+    
+    const leftUpper = new T.Mesh(new T.BoxGeometry(0.18, 4.6, 18), upperWallMat);
+    leftUpper.position.set(-10.91, 3.9, 0);
+    envGroup.add(leftUpper);
+    
+    // --- Right Wall ---
+    const rightLower = new T.Mesh(new T.BoxGeometry(0.18, 1.6, 18), wainscotMat);
+    rightLower.position.set(10.91, 0.8, 0);
+    envGroup.add(rightLower);
+    
+    const rightMolding = new T.Mesh(new T.BoxGeometry(0.08, 0.09, 18), moldingMat);
+    rightMolding.position.set(10.87, 1.62, 0);
+    envGroup.add(rightMolding);
+    
+    const rightUpper = new T.Mesh(new T.BoxGeometry(0.18, 4.6, 18), upperWallMat);
+    rightUpper.position.set(10.91, 3.9, 0);
+    envGroup.add(rightUpper);
+    
+    // Ceiling
+    const ceiling = box(22, 0.2, 18, 0xf0e4d0);
+    ceiling.position.set(0, 6.25, 0);
+    envGroup.add(ceiling);
+    
+    // 3. Center Blackboard
+    const board = Props.blackboard(6.2, 2.9);
+    board.position.set(0, 2.82, -5.82);
+    envGroup.add(board);
+    
+    // Top Banner Plaque on Blackboard
+    const bannerFrame = box(4.4, 0.36, 0.08, 0x4a2a14);
+    bannerFrame.position.set(0, 4.42, -5.82);
+    envGroup.add(bannerFrame);
+    const bannerLabel = makeLabel('🏫 CLASSROOM 6-A  •  DIGITAL SMARTNESS LAB 🌟', {
+      scale: 0.34, fs: 28, bg: 'rgba(23,65,42,0.95)', fg: '#fffae0', border: '#f59e0b'
+    });
+    bannerLabel.position.set(0, 4.42, -5.76);
+    envGroup.add(bannerLabel);
+    
+    // 4. Classroom Analog Clock
+    const clockGroup = new T.Group();
+    clockGroup.position.set(0, 4.88, -5.82);
+    const clockBody = cyl(0.34, 0.34, 0.05, 0xffffff, 24);
+    clockBody.rotation.x = Math.PI / 2;
+    clockGroup.add(clockBody);
+    const clockRim = new T.Mesh(new T.TorusGeometry(0.34, 0.035, 10, 28), mat(0x273444));
+    clockGroup.add(clockRim);
+    for(let h=0; h<12; h++){
+      const ang = (h / 12) * Math.PI * 2;
+      const tick = box(h%3===0?0.032:0.016, 0.045, 0.01, 0x1e293b);
+      tick.position.set(Math.sin(ang)*0.26, Math.cos(ang)*0.26, 0.03);
+      tick.rotation.z = -ang;
+      clockGroup.add(tick);
+    }
+    const hourHand = box(0.026, 0.16, 0.02, 0x0f172a);
+    hourHand.position.set(0.04, 0.04, 0.035);
+    hourHand.rotation.z = -0.7;
+    clockGroup.add(hourHand);
+    const minHand = box(0.018, 0.22, 0.02, 0x0f172a);
+    minHand.position.set(-0.04, 0.05, 0.035);
+    minHand.rotation.z = 0.9;
+    clockGroup.add(minHand);
+    const secHand = box(0.01, 0.25, 0.02, 0xef4444);
+    secHand.position.set(0, 0.06, 0.04);
+    secHand.rotation.z = -0.3;
+    clockGroup.add(secHand);
+    const centerPin = cyl(0.022, 0.022, 0.03, 0xef4444, 12);
+    centerPin.rotation.x = Math.PI/2; centerPin.position.z = 0.045;
+    clockGroup.add(centerPin);
+    envGroup.add(clockGroup);
+    
+    // 5. Left Cork Bulletin Board
+    const corkMatL = new T.MeshStandardMaterial({map: Props.corkTexture('rules'), roughness: 0.85});
+    const corkFrameL = box(2.4, 2.3, 0.1, 0x5a381b);
+    corkFrameL.position.set(-4.65, 3.0, -5.82);
+    envGroup.add(corkFrameL);
+    const corkBoardL = new T.Mesh(new T.BoxGeometry(2.24, 2.14, 0.04), corkMatL);
+    corkBoardL.position.set(-4.65, 3.0, -5.76);
+    envGroup.add(corkBoardL);
+    
+    // 6. Right Cork Bulletin Board
+    const corkMatR = new T.MeshStandardMaterial({map: Props.corkTexture('honors'), roughness: 0.85});
+    const corkFrameR = box(2.4, 2.3, 0.1, 0x5a381b);
+    corkFrameR.position.set(4.65, 3.0, -5.82);
+    envGroup.add(corkFrameR);
+    const corkBoardR = new T.Mesh(new T.BoxGeometry(2.24, 2.14, 0.04), corkMatR);
+    corkBoardR.position.set(4.65, 3.0, -5.76);
+    envGroup.add(corkBoardR);
+    
+    // 7. Pennant Bunting Garland
+    const garlandColors = [0xff5964, 0xfec601, 0x35a7ff, 0x38b000, 0x9d4edd, 0xf77f00, 0x00f5d4];
+    for(let f=0; f<23; f++){
+      const fx = -7.7 + f * 0.7;
+      const sag = Math.sin((f / 22) * Math.PI) * 0.32;
+      const fy = 5.4 - sag;
+      const flag = new T.Mesh(
+        new T.ConeGeometry(0.22, 0.38, 3),
+        mat(garlandColors[f % garlandColors.length], {roughness: 0.6})
+      );
+      flag.rotation.x = Math.PI;
+      flag.position.set(fx, fy - 0.15, -5.78);
+      envGroup.add(flag);
+    }
+    const stringCurve = box(16.0, 0.02, 0.02, 0xd4d4d4);
+    stringCurve.position.set(0, 5.28, -5.78);
+    envGroup.add(stringCurve);
+    
+    // 8. Open Frame Bookshelf (Neat, perfectly aligned books & realistic shelf library)
+    const shelfGroup = new T.Group();
+    shelfGroup.position.set(7.0, 1.85, -4.5);
+    shelfGroup.rotation.y = -0.28;
+    
+    const woodMat = mat(0x4a2208, {roughness: 0.75});
+    const backPanel = new T.Mesh(new T.BoxGeometry(2.4, 3.5, 0.05), mat(0x321404));
+    backPanel.position.set(0, 0, -0.22);
+    shelfGroup.add(backPanel);
+    
+    const sideL = new T.Mesh(new T.BoxGeometry(0.08, 3.5, 0.48), woodMat);
+    sideL.position.set(-1.2, 0, 0); shelfGroup.add(sideL);
+    const sideR = new T.Mesh(new T.BoxGeometry(0.08, 3.5, 0.48), woodMat);
+    sideR.position.set(1.2, 0, 0); shelfGroup.add(sideR);
+    const topB = new T.Mesh(new T.BoxGeometry(2.5, 0.08, 0.5), woodMat);
+    topB.position.set(0, 1.75, 0); shelfGroup.add(topB);
+    const botB = new T.Mesh(new T.BoxGeometry(2.5, 0.08, 0.5), woodMat);
+    botB.position.set(0, -1.75, 0); shelfGroup.add(botB);
+    
+    // Middle shelf dividers
+    const shelf1 = new T.Mesh(new T.BoxGeometry(2.32, 0.06, 0.46), woodMat);
+    shelf1.position.set(0, -0.60, 0); shelfGroup.add(shelf1);
+    const shelf2 = new T.Mesh(new T.BoxGeometry(2.32, 0.06, 0.46), woodMat);
+    shelf2.position.set(0, 0.55, 0); shelfGroup.add(shelf2);
+    
+    // --- Tier 1 (Bottom Shelf, surface y = -1.71) ---
+    const tier1Books = [
+      {w:0.12, h:0.75, col:0x1e3a8a, label:'SCIENCE'},
+      {w:0.11, h:0.72, col:0x047857, label:'MATH'},
+      {w:0.14, h:0.78, col:0xb91c1c, label:'HISTORY'},
+      {w:0.10, h:0.70, col:0x7c2d12, label:'ART'},
+      {w:0.13, h:0.76, col:0x4338ca, label:'CODING'},
+      {w:0.11, h:0.74, col:0x0f766e, label:'SPACE'},
+      {w:0.14, h:0.77, col:0xa16207, label:'ATLAS'},
+      {w:0.12, h:0.73, col:0x6d28d9, label:'ROBOTS'},
+      {w:0.10, h:0.69, col:0xbe123c, label:'MUSIC'},
+      {w:0.13, h:0.75, col:0x1e293b, label:'WEB'}
+    ];
+    let curX1 = -1.02;
+    tier1Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.36, b.col);
+      bookMesh.position.set(curX1 + b.w/2, -1.71 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      // Gold/White spine band
+      const spine = box(b.w * 0.9, 0.06, 0.02, 0xfde047);
+      spine.position.set(curX1 + b.w/2, -1.71 + b.h * 0.65, 0.20);
+      shelfGroup.add(spine);
+      curX1 += b.w + 0.015;
+    });
+    // Bookend
+    const bookEnd1 = box(0.04, 0.45, 0.38, 0x334155);
+    bookEnd1.position.set(curX1 + 0.02, -1.71 + 0.225, 0.02);
+    shelfGroup.add(bookEnd1);
+
+    // --- Tier 2 (Middle Shelf, surface y = -0.57) ---
+    // Left side: Neat standing books
+    const tier2Books = [
+      {w:0.12, h:0.70, col:0x0284c7},
+      {w:0.11, h:0.68, col:0xd97706},
+      {w:0.13, h:0.74, col:0x16a34a},
+      {w:0.10, h:0.66, col:0x9333ea},
+      {w:0.12, h:0.72, col:0xe11d48},
+      {w:0.14, h:0.75, col:0x2563eb}
+    ];
+    let curX2 = -1.02;
+    tier2Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.34, b.col);
+      bookMesh.position.set(curX2 + b.w/2, -0.57 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      curX2 += b.w + 0.015;
+    });
+    const bookEnd2 = box(0.04, 0.40, 0.36, 0x334155);
+    bookEnd2.position.set(curX2 + 0.02, -0.57 + 0.20, 0.02);
+    shelfGroup.add(bookEnd2);
+
+    // Right side of middle shelf: Horizontally stacked books resting neatly
+    const stack1 = box(0.58, 0.12, 0.38, 0x15803d);
+    stack1.position.set(0.55, -0.57 + 0.06, 0.02);
+    shelfGroup.add(stack1);
+    const stack2 = box(0.54, 0.11, 0.36, 0xb91c1c);
+    stack2.position.set(0.55, -0.57 + 0.12 + 0.055, 0.02);
+    shelfGroup.add(stack2);
+    const stack3 = box(0.48, 0.10, 0.34, 0x1e40af);
+    stack3.position.set(0.55, -0.57 + 0.23 + 0.05, 0.02);
+    shelfGroup.add(stack3);
+
+    // --- Tier 3 (Top inside Shelf, surface y = 0.58) ---
+    const tier3Books = [
+      {w:0.11, h:0.68, col:0x7c3aed},
+      {w:0.13, h:0.72, col:0x059669},
+      {w:0.12, h:0.70, col:0xdc2626},
+      {w:0.10, h:0.65, col:0x0284c7},
+      {w:0.14, h:0.75, col:0xf59e0b},
+      {w:0.12, h:0.71, col:0x475569},
+      {w:0.11, h:0.69, col:0x10b981},
+      {w:0.13, h:0.73, col:0xdb2777},
+      {w:0.12, h:0.70, col:0x2563eb}
+    ];
+    let curX3 = -1.02;
+    tier3Books.forEach(b => {
+      const bookMesh = box(b.w, b.h, 0.34, b.col);
+      bookMesh.position.set(curX3 + b.w/2, 0.58 + b.h/2, 0.02);
+      shelfGroup.add(bookMesh);
+      curX3 += b.w + 0.015;
+    });
+
+    // Top of bookcase props (surface y = 1.79)
+    const globeStand = cyl(0.05, 0.12, 0.16, 0xd97706, 12);
+    globeStand.position.set(-0.55, 1.87, 0);
+    shelfGroup.add(globeStand);
+    const globeSphere = sph(0.24, 0x2563eb, {roughness: 0.4});
+    globeSphere.position.set(-0.55, 2.15, 0);
+    shelfGroup.add(globeSphere);
+    
+    const trophyBase = box(0.22, 0.1, 0.22, 0x1e293b);
+    trophyBase.position.set(0.55, 1.84, 0);
+    shelfGroup.add(trophyBase);
+    const trophyCup = cyl(0.16, 0.07, 0.25, 0xf59e0b, 16, {metalness: 0.85, roughness: 0.2});
+    trophyCup.position.set(0.55, 2.07, 0);
+    shelfGroup.add(trophyCup);
+    const trophyStar = sph(0.06, 0xfbbf24, {metalness: 0.9, roughness: 0.1});
+    trophyStar.position.set(0.55, 2.27, 0);
+    shelfGroup.add(trophyStar);
+    
+    envGroup.add(shelfGroup);
+    
+    // 9. Left Side: Sunny School Window with visible outdoor view
+    const winGroup = new T.Group();
+    winGroup.position.set(-7.0, 2.8, -4.5);
+    winGroup.rotation.y = 0.28;
+    
+    const whiteFrameMat = mat(0xffffff, {roughness: 0.5});
+    const frameL = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    frameL.position.set(-1.23, 0, 0.02); winGroup.add(frameL);
+    const frameR = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    frameR.position.set(1.23, 0, 0.02); winGroup.add(frameR);
+    const frameT = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    frameT.position.set(0, 1.63, 0.02); winGroup.add(frameT);
+    const frameB = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    frameB.position.set(0, -1.63, 0.02); winGroup.add(frameB);
+    
+    const winSill = box(2.8, 0.14, 0.38, 0x4a2208);
+    winSill.position.set(0, -1.72, 0.12);
+    winGroup.add(winSill);
+    
+    const skyMat = new T.MeshBasicMaterial({
+      map: Props.outdoorSkyTexture()
+    });
+    const skyPane = new T.Mesh(new T.PlaneGeometry(2.4, 3.2), skyMat);
+    skyPane.position.set(0, 0, -0.01);
+    winGroup.add(skyPane);
+    
+    const mH1 = box(2.36, 0.06, 0.05, 0xffffff); mH1.position.set(0, -0.45, 0.03); winGroup.add(mH1);
+    const mH2 = box(2.36, 0.06, 0.05, 0xffffff); mH2.position.set(0, 0.65, 0.03); winGroup.add(mH2);
+    const mV = box(0.06, 3.2, 0.05, 0xffffff); mV.position.set(0, 0, 0.03); winGroup.add(mV);
+    
+    const potL = Props.plant();
+    potL.scale.set(1.3, 1.3, 1.3);
+    potL.position.set(-0.7, -1.62, 0.14);
+    winGroup.add(potL);
+    
+    const potL2 = Props.plant();
+    potL2.scale.set(1.1, 1.1, 1.1);
+    potL2.position.set(0.7, -1.62, 0.14);
+    winGroup.add(potL2);
+    
+    envGroup.add(winGroup);
+    
+    // 10. Background Student Desks & Chairs
+    const deskL = Props.desk();
+    deskL.position.set(-3.2, 0, -3.2);
+    envGroup.add(deskL);
+    const chairL2 = Props.chair(0x2563eb);
+    chairL2.position.set(-3.2, 0, -2.6);
+    chairL2.rotation.y = Math.PI;
+    envGroup.add(chairL2);
+    const backpackL = box(0.32, 0.42, 0.22, 0x1d4ed8);
+    backpackL.position.set(-3.2, 0.5, -2.3);
+    envGroup.add(backpackL);
+    
+    const deskR = Props.desk();
+    deskR.position.set(3.2, 0, -3.2);
+    envGroup.add(deskR);
+    const chairR2 = Props.chair(0xe11d48);
+    chairR2.position.set(3.2, 0, -2.6);
+    chairR2.rotation.y = Math.PI;
+    envGroup.add(chairR2);
+    const backpackR = box(0.32, 0.42, 0.22, 0xbe123c);
+    backpackR.position.set(3.2, 0.5, -2.3);
+    envGroup.add(backpackR);
+    
+    const notebook1 = box(0.34, 0.04, 0.26, 0x2563eb); notebook1.position.set(0.75, 1.02, -1.8); envGroup.add(notebook1);
+    const notebook2 = box(0.32, 0.04, 0.24, 0xdc2626); notebook2.position.set(0.75, 1.06, -1.8); envGroup.add(notebook2);
+    const ruler = box(0.35, 0.01, 0.04, 0xfacc15); ruler.position.set(0.75, 1.09, -1.6); envGroup.add(ruler);
+    
+    const penCup = cyl(0.07, 0.06, 0.14, 0x0891b2, 12); penCup.position.set(-0.75, 1.06, -1.8); envGroup.add(penCup);
+    const pen1 = cyl(0.008, 0.008, 0.18, 0xdc2626, 6); pen1.position.set(-0.74, 1.16, -1.8); pen1.rotation.z = 0.2; envGroup.add(pen1);
+    const pen2 = cyl(0.008, 0.008, 0.18, 0x2563eb, 6); pen2.position.set(-0.76, 1.16, -1.8); pen2.rotation.z = -0.15; envGroup.add(pen2);
+    const pen3 = cyl(0.008, 0.008, 0.18, 0x16a34a, 6); pen3.position.set(-0.75, 1.16, -1.78); pen3.rotation.x = 0.2; envGroup.add(pen3);
+    
+    // 11. Hanging Vintage School Pendant Lights
+    [[-2.4, -1.0], [2.4, -1.0]].forEach(([lx, lz]) => {
+      const cord = cyl(0.012, 0.012, 1.4, 0x334155, 6);
+      cord.position.set(lx, 5.5, lz);
+      envGroup.add(cord);
+      
+      const shade = new T.Mesh(
+        new T.ConeGeometry(0.38, 0.22, 18, 1, true),
+        mat(0x133e24, {roughness: 0.4, side: T.DoubleSide})
+      );
+      shade.position.set(lx, 4.8, lz);
+      envGroup.add(shade);
+      
+      const bulb = sph(0.08, 0xffedd5, {emissive: 0xffd166, emissiveIntensity: 1.0});
+      bulb.position.set(lx, 4.75, lz);
+      envGroup.add(bulb);
+    });
+    
+    // 12. Calibrated Warm Ambient Lighting
+    const ceilingWarmLight = new T.PointLight(0xffedd5, 0.45, 14);
+    ceilingWarmLight.position.set(0, 4.8, -1.0);
+    envGroup.add(ceilingWarmLight);
+    
+    const boardSpot = new T.SpotLight(0xfffaea, 0.45, 10, Math.PI/4, 0.5);
+    boardSpot.position.set(0, 4.8, -3.0);
+    boardSpot.target.position.set(0, 2.82, -5.82);
+    envGroup.add(boardSpot);
+    envGroup.add(boardSpot.target);
+    
+    root.add(envGroup);
   },
 
   tree(color){ const g=new T.Group(); const trunk=cyl(0.12,0.16,0.7,0x8a5a33,8); trunk.position.y=0.35; g.add(trunk);
