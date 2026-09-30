@@ -556,7 +556,7 @@ function initEngine(){
   renderer.setClearColor(0xbfe8ff, 1);
   renderer.setSize(W(),H()); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
-  renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+  renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=0.85;
   const appEl = document.getElementById('app');
   if(appEl && !appEl.hasChildNodes()) appEl.appendChild(renderer.domElement);
   camera=new T.PerspectiveCamera(52, W()/H(), 0.1, 200);
@@ -596,11 +596,11 @@ function disposeScene(s){ s.traverse(o=>{ if(o.userData&&o.userData.persistent)r
 
 /* standard 3-point light rig; mood = 'warm' | 'cool' | 'alert' */
 function addLights(root, mood){
-  const amb = new T.AmbientLight(0xffffff, mood==='cool'? 0.85 : 0.95);
+  const amb = new T.AmbientLight(0xffffff, mood==='cool'? 0.55 : 0.65);
   root.add(amb);
-  const hemi = new T.HemisphereLight(0xffffff, 0xd0e4ff, 0.6);
+  const hemi = new T.HemisphereLight(0xffffff, 0xd0e4ff, 0.40);
   root.add(hemi);
-  const sun = new T.DirectionalLight(0xfff4e0, mood==='cool'? 0.8 : 1.1);
+  const sun = new T.DirectionalLight(0xfff4e0, mood==='cool'? 0.60 : 0.75);
   sun.position.set(6, 14, 8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
@@ -609,7 +609,7 @@ function addLights(root, mood){
   sun.shadow.camera.top = 16; sun.shadow.camera.bottom = -16;
   sun.shadow.bias = -0.0005;
   root.add(sun);
-  const fill = new T.DirectionalLight(mood==='alert'? 0xffd0b0 : 0xd8e8ff, 0.45);
+  const fill = new T.DirectionalLight(mood==='alert'? 0xffd0b0 : 0xd8e8ff, 0.30);
   fill.position.set(-8, 6, -4);
   root.add(fill);
   return {amb, hemi, sun, fill};
@@ -763,12 +763,12 @@ function hex(n){ return '#'+('000000'+n.toString(16)).slice(-6); }
    wrapped onto it, blue sweater-vest over a white shirt, grey bottoms.
    Being true 3D, they occlude furniture correctly (no billboard clipping).
    ===================================================================== */
-const OUTLINE_MAT=new T.MeshBasicMaterial({color:0x2a2636, side:T.BackSide, toneMapped:false});
+const OUTLINE_MAT=new T.MeshBasicMaterial({color:0x0f172a, side:T.BackSide, toneMapped:false});
 /* flat, unlit cartoon color that renders exactly as specified (like the 2D reference),
    with a gentle top-light tint baked in via vertex-free two-tone using emissive-free basic. */
 function toon(color){ return new T.MeshBasicMaterial({color:new T.Color(color), toneMapped:false}); }
 function tmesh(geo,color){ const m=new T.Mesh(geo, toon(color)); m.castShadow=true; return m; }
-function outline(mesh,k){ const o=new T.Mesh(mesh.geometry, OUTLINE_MAT); o.scale.setScalar(k||1.06); mesh.add(o); return mesh; }
+function outline(mesh,k){ const o=new T.Mesh(mesh.geometry, OUTLINE_MAT); o.scale.setScalar(k||1.07); mesh.add(o); return mesh; }
 const CPAL={
   boy:{ skin:0xf2c59a, skinShade:'#d99f70', hair:0x6b4227, hairShade:'#3a2413', vest:0x3a7bd0, vestD:0x2a5da8,
         white:0xfbfdff, pant:0x8992a3, shoe:0x3f4757 },
@@ -782,26 +782,26 @@ function Character(opts){
   const hip=new T.Group(); hip.position.y=0.62; g.add(hip);
   if(girl){
     function legG(x){ const l=new T.Group(); l.position.set(x,0,0);
-      const leg=tmesh(new T.CylinderGeometry(0.07,0.058,0.5,14),skin); leg.position.y=-0.34; l.add(leg);
-      const sock=tmesh(new T.CylinderGeometry(0.074,0.066,0.11,14),P.sock); sock.position.y=-0.55; l.add(sock);
-      const shoe=tmesh(new T.BoxGeometry(0.12,0.09,0.23),P.shoe); shoe.position.set(0,-0.625,0.05); outline(shoe,1.06); l.add(shoe);
+      const leg=tmesh(new T.CylinderGeometry(0.07,0.058,0.5,14),skin); leg.position.y=-0.34; outline(leg,1.06); l.add(leg);
+      const sock=tmesh(new T.CylinderGeometry(0.074,0.066,0.11,14),P.sock); sock.position.y=-0.55; outline(sock,1.06); l.add(sock);
+      const shoe=tmesh(new T.BoxGeometry(0.12,0.09,0.23),P.shoe); shoe.position.set(0,-0.625,0.05); outline(shoe,1.08); l.add(shoe);
       return l; }
     hip.add(legG(-0.09), legG(0.09));
-    const skirt=tmesh(new T.CylinderGeometry(0.16,0.31,0.30,20,1,true),P.skirt); skirt.material.side=T.DoubleSide; skirt.position.y=-0.05; outline(skirt,1.04); hip.add(skirt);
+    const skirt=tmesh(new T.CylinderGeometry(0.16,0.31,0.30,20,1,true),P.skirt); skirt.material.side=T.DoubleSide; skirt.position.y=-0.05; outline(skirt,1.06); hip.add(skirt);
   } else {
     function legB(x){ const l=new T.Group(); l.position.set(x,0,0);
-      const p=tmesh(new T.CylinderGeometry(0.098,0.078,0.6,14),P.pant); p.position.y=-0.30; outline(p,1.05); l.add(p);
-      const shoe=tmesh(new T.BoxGeometry(0.14,0.1,0.26),P.shoe); shoe.position.set(0,-0.61,0.05); outline(shoe,1.05); l.add(shoe);
+      const p=tmesh(new T.CylinderGeometry(0.098,0.078,0.6,14),P.pant); p.position.y=-0.30; outline(p,1.07); l.add(p);
+      const shoe=tmesh(new T.BoxGeometry(0.14,0.1,0.26),P.shoe); shoe.position.set(0,-0.61,0.05); outline(shoe,1.07); l.add(shoe);
       return l; }
     hip.add(legB(-0.11), legB(0.11));
   }
   // ---------- TORSO: white shirt + blue vest ----------
   const torso=new T.Group(); torso.position.y=0; hip.add(torso);
-  const shirt=tmesh(new T.CylinderGeometry(0.188,0.205,0.54,18),white); shirt.position.y=0.28; outline(shirt,1.03); torso.add(shirt);
-  const shoulders=tmesh(new T.SphereGeometry(0.2,20,16),white); shoulders.scale.set(1,0.7,0.85); shoulders.position.y=0.52; torso.add(shoulders);
+  const shirt=tmesh(new T.CylinderGeometry(0.188,0.205,0.54,18),white); shirt.position.y=0.28; outline(shirt,1.055); torso.add(shirt);
+  const shoulders=tmesh(new T.SphereGeometry(0.2,20,16),white); shoulders.scale.set(1,0.7,0.85); shoulders.position.y=0.52; outline(shoulders,1.055); torso.add(shoulders);
   // vest (blue, sleeveless) over the shirt
-  const vest=tmesh(new T.CylinderGeometry(0.198,0.216,0.42,18),P.vest); vest.position.y=0.25; outline(vest,1.03); torso.add(vest);
-  const vestTop=tmesh(new T.SphereGeometry(0.2,20,16),P.vest); vestTop.scale.set(1,0.55,0.9); vestTop.position.y=0.46; torso.add(vestTop);
+  const vest=tmesh(new T.CylinderGeometry(0.198,0.216,0.42,18),P.vest); vest.position.y=0.25; outline(vest,1.055); torso.add(vest);
+  const vestTop=tmesh(new T.SphereGeometry(0.2,20,16),P.vest); vestTop.scale.set(1,0.55,0.9); vestTop.position.y=0.46; outline(vestTop,1.055); torso.add(vestTop);
   // white V-neck (shirt showing) + collar flaps
   const vcone=new T.Mesh(new T.ConeGeometry(0.075,0.17,3), toon(white)); vcone.rotation.x=Math.PI; vcone.position.set(0,0.5,0.185); torso.add(vcone);
   const cL=tmesh(new T.BoxGeometry(0.11,0.035,0.03),white); cL.position.set(-0.055,0.585,0.17); cL.rotation.z=-0.6; torso.add(cL);
@@ -810,16 +810,16 @@ function Character(opts){
   function ctxVestTrim(){ const t=new T.Mesh(new T.TorusGeometry(0.214,0.014,8,24), toon(P.vestD)); t.rotation.x=Math.PI/2; t.position.y=-0.2; vest.add(t); }
   // ---------- ARMS: white long sleeves + skin hands ----------
   function arm(x){ const a=new T.Group(); a.position.set(x,0.52,0);
-    const up=tmesh(new T.CylinderGeometry(0.06,0.055,0.30,12),white); up.position.y=-0.15; outline(up,1.07); a.add(up);
+    const up=tmesh(new T.CylinderGeometry(0.06,0.055,0.30,12),white); up.position.y=-0.15; outline(up,1.085); a.add(up);
     const fore=new T.Group(); fore.position.y=-0.30; a.add(fore);
-    const f=tmesh(new T.CylinderGeometry(0.052,0.046,0.26,12),white); f.position.y=-0.13; outline(f,1.07); fore.add(f);
-    const hand=tmesh(new T.SphereGeometry(0.058,14,12),skin); hand.position.y=-0.27; outline(hand,1.07); fore.add(hand);
+    const f=tmesh(new T.CylinderGeometry(0.052,0.046,0.26,12),white); f.position.y=-0.13; outline(f,1.085); fore.add(f);
+    const hand=tmesh(new T.SphereGeometry(0.058,14,12),skin); hand.position.y=-0.27; outline(hand,1.085); fore.add(hand);
     a.userData.fore=fore; return a; }
   const armL=arm(-0.235), armR=arm(0.235); torso.add(armL,armR);
   // ---------- NECK + HEAD ----------
-  const neck=tmesh(new T.CylinderGeometry(0.058,0.07,0.12,12),skin); neck.position.y=0.66; torso.add(neck);
+  const neck=tmesh(new T.CylinderGeometry(0.058,0.07,0.12,12),skin); neck.position.y=0.66; outline(neck,1.06); torso.add(neck);
   const head=new T.Group(); head.position.y=0.86; torso.add(head);
-  const R=0.2; const skull=tmesh(new T.SphereGeometry(R,32,28),skin); skull.scale.set(1,1.06,0.98); outline(skull,1.045); head.add(skull);
+  const R=0.2; const skull=tmesh(new T.SphereGeometry(R,32,28),skin); skull.scale.set(1,1.06,0.98); outline(skull,1.055); head.add(skull);
   // ears
   [[-0.195],[0.195]].forEach(([x])=>{ const e=tmesh(new T.SphereGeometry(0.04,12,12),skin); e.scale.set(0.7,1,1); e.position.set(x,-0.02,0); head.add(e); });
   // face decal wrapped on the front of the head
@@ -829,15 +829,15 @@ function Character(opts){
   const faceMesh=new T.Mesh(faceGeo, new T.MeshBasicMaterial({map:ftex,transparent:true,depthWrite:false,toneMapped:false})); head.add(faceMesh);
   // hair
   if(girl){
-    const capH=tmesh(new T.SphereGeometry(R*1.04,24,20),hair); capH.scale.set(1.02,1.0,1.02); capH.position.set(0,0.06,-0.02); outline(capH,1.03); head.add(capH);
-    const fr=tmesh(new T.SphereGeometry(R*1.02,24,16),hair); fr.scale.set(1.03,0.5,1.04); fr.position.set(0,0.11,0.05); head.add(fr);
-    const pony=tmesh(new T.SphereGeometry(0.09,16,14),hair); pony.scale.set(1,1.5,1); pony.position.set(0.2,0.02,-0.1); outline(pony,1.05); head.add(pony);
-    const pony2=tmesh(new T.CylinderGeometry(0.07,0.03,0.28,12),hair); pony2.position.set(0.24,-0.16,-0.12); pony2.rotation.z=-0.3; head.add(pony2);
+    const capH=tmesh(new T.SphereGeometry(R*1.04,24,20),hair); capH.scale.set(1.02,1.0,1.02); capH.position.set(0,0.06,-0.02); outline(capH,1.05); head.add(capH);
+    const fr=tmesh(new T.SphereGeometry(R*1.02,24,16),hair); fr.scale.set(1.03,0.5,1.04); fr.position.set(0,0.11,0.05); outline(fr,1.05); head.add(fr);
+    const pony=tmesh(new T.SphereGeometry(0.09,16,14),hair); pony.scale.set(1,1.5,1); pony.position.set(0.2,0.02,-0.1); outline(pony,1.06); head.add(pony);
+    const pony2=tmesh(new T.CylinderGeometry(0.07,0.03,0.28,12),hair); pony2.position.set(0.24,-0.16,-0.12); pony2.rotation.z=-0.3; outline(pony2,1.06); head.add(pony2);
     const band=new T.Mesh(new T.TorusGeometry(R*1.02,0.014,8,28,Math.PI), toon(P.vest)); band.rotation.x=Math.PI/2; band.rotation.z=Math.PI; band.position.set(0,0.06,0.02); head.add(band);
   } else {
-    const capH=tmesh(new T.SphereGeometry(R*1.03,24,20),hair); capH.scale.set(1.02,0.98,1.02); capH.position.set(0,0.07,-0.02); outline(capH,1.03); head.add(capH);
-    const fr=tmesh(new T.SphereGeometry(R*1.01,24,16),hair); fr.scale.set(1.03,0.44,1.04); fr.position.set(0,0.12,0.055); head.add(fr);
-    const swoop=tmesh(new T.SphereGeometry(0.07,14,12),hair); swoop.scale.set(1.3,0.7,1); swoop.position.set(-0.09,0.17,0.09); head.add(swoop);
+    const capH=tmesh(new T.SphereGeometry(R*1.03,24,20),hair); capH.scale.set(1.02,0.98,1.02); capH.position.set(0,0.07,-0.02); outline(capH,1.05); head.add(capH);
+    const fr=tmesh(new T.SphereGeometry(R*1.01,24,16),hair); fr.scale.set(1.03,0.44,1.04); fr.position.set(0,0.12,0.055); outline(fr,1.05); head.add(fr);
+    const swoop=tmesh(new T.SphereGeometry(0.07,14,12),hair); swoop.scale.set(1.3,0.7,1); swoop.position.set(-0.09,0.17,0.09); outline(swoop,1.06); head.add(swoop);
   }
   const chr={ group:g, hip, torso, head, armL, armR, faceCtx:fctx, faceTex:ftex,
     role, name:opts.name, skinShade:P.skinShade, hairShade:P.hairShade,
@@ -942,12 +942,20 @@ const NAMES={boy:'Aarav', girl:'Meera'};
 let _dlg=null;
 function runDialogue(lines, onEnd){
   LOG('DIALOGUE','Playing scene conversation...');
-  _dlg={lines, i:-1, onEnd, cast:{}};
+  _dlg={lines, i:-1, onEnd, isTyping:false, fullText:'', cast:{}};
   document.getElementById('dialogue').classList.add('show');
   nextLine();
 }
 function nextLine(){
   const D=_dlg; if(!D) return;
+  // If still typing the current line, finish typing immediately on first click
+  if(D.isTyping && D.fullText){
+    clearInterval(D.typer);
+    D.isTyping = false;
+    const tx=document.getElementById('dText');
+    if(tx) tx.textContent = D.fullText;
+    return;
+  }
   Voice.stop();
   D.i++;
   if(D.i>=D.lines.length){ endDialogue(); return; }
@@ -959,14 +967,30 @@ function nextLine(){
   sp.textContent = who==='boy'?NAMES.boy : who==='girl'?NAMES.girl : (ln.name||'Guide');
   tx.textContent='';
   const full=ln.text; let k=0; clearInterval(D.typer);
+  D.fullText = full;
+  D.isTyping = true;
   const speaker = who==='boy'?boyChar():who==='girl'?girlChar():null;
   if(speaker){ if(ln.expr){speaker.expr=ln.expr;} if(ln.pose)speaker.pose=ln.pose; speaker.talk=true; drawFace(speaker,speaker.expr);
     speaker.lookTarget = ln.look || null;                 // glance at the learning object
     D._talker=speaker;
     // typewriter fills the subtitle; the VOICE controls how long the mouth moves
-    D.typer=setInterval(()=>{ k++; tx.textContent=full.slice(0,k); if(k>=full.length){ clearInterval(D.typer); } },22);
+    D.typer=setInterval(()=>{
+      k++;
+      tx.textContent=full.slice(0,k);
+      if(k>=full.length){
+        clearInterval(D.typer);
+        D.isTyping = false;
+      }
+    }, 22);
   } else {
-    D.typer=setInterval(()=>{ k++; tx.textContent=full.slice(0,k); if(k>=full.length)clearInterval(D.typer); },20);
+    D.typer=setInterval(()=>{
+      k++;
+      tx.textContent=full.slice(0,k);
+      if(k>=full.length){
+        clearInterval(D.typer);
+        D.isTyping = false;
+      }
+    }, 20);
   }
   // camera framing for this line (composed to keep kids + object visible)
   if(ln.cam) ln.cam();
@@ -979,7 +1003,10 @@ function nextLine(){
   D._replay=()=>Voice.speak(who, full, ln.audio, ()=>{});
   Voice.speak(who, full, ln.audio, ()=>{
     if(speaker) speaker.talk=false;
-    if(_dlg===D && D.i===myIdx){ setTimeout(()=>{ if(_dlg===D && D.i===myIdx) nextLine(); }, 480); }
+    if(_dlg===D && D.i===myIdx){
+      D.isTyping = false;
+      setTimeout(()=>{ if(_dlg===D && D.i===myIdx) nextLine(); }, 600);
+    }
   });
 }
 function endDialogue(){ const D=_dlg; if(!D)return; clearInterval(D.typer); Voice.stop();
@@ -987,7 +1014,9 @@ function endDialogue(){ const D=_dlg; if(!D)return; clearInterval(D.typer); Voic
   document.getElementById('dialogue').classList.remove('show');
   const cb=D.onEnd; _dlg=null; if(cb)cb();
 }
-document.getElementById('dNext').addEventListener('click', ()=>{ SFX.click(); nextLine(); /* skip to next line */ });
+document.getElementById('dNext').addEventListener('click', (e)=>{ e.stopPropagation(); SFX.click(); nextLine(); });
+const dboxEl = document.querySelector('#dialogue .dbox');
+if(dboxEl){ dboxEl.addEventListener('click', (e)=>{ if(e.target.id!=='dNext'){ SFX.click(); nextLine(); } }); }
 
 function boyChar(){ return Chars.list.find(c=>c.role==='boy'); }
 function girlChar(){ return Chars.list.find(c=>c.role==='girl'); }
@@ -1787,11 +1816,11 @@ const Props={
   classroomFloorTexture(){
     const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
     const ctx=cv.getContext('2d');
-    ctx.fillStyle='#9e5820'; ctx.fillRect(0,0,1024,1024);
+    ctx.fillStyle='#54280b'; ctx.fillRect(0,0,1024,1024);
     
     const plankH = 64;
     const plankW = 256;
-    const colors = ['#8f4b14', '#9e5820', '#ad662b', '#96521a', '#7e3e0d', '#a46025', '#b57033'];
+    const colors = ['#4e240a', '#5a2e0e', '#663612', '#52280c', '#461e06', '#5e3210', '#6b3a14'];
     
     for(let y=0; y<1024; y+=plankH){
       const row = Math.floor(y/plankH);
@@ -1802,7 +1831,7 @@ const Props={
         ctx.fillStyle = colors[colIdx];
         ctx.fillRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
         
-        ctx.strokeStyle = 'rgba(40,15,0,0.18)';
+        ctx.strokeStyle = 'rgba(25,8,0,0.35)';
         ctx.lineWidth = 1.4;
         for(let g=0; g<3; g++){
           const gy = y + 12 + g * 18;
@@ -1812,7 +1841,7 @@ const Props={
           ctx.stroke();
         }
         
-        ctx.strokeStyle = 'rgba(35,12,0,0.65)';
+        ctx.strokeStyle = 'rgba(20,6,0,0.85)';
         ctx.lineWidth = 2.4;
         ctx.strokeRect(x + offsetX + 1, y + 1, plankW - 2, plankH - 2);
       }
@@ -1827,12 +1856,12 @@ const Props={
   wainscotTexture(){
     const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
     const ctx=cv.getContext('2d');
-    ctx.fillStyle='#6b3612'; ctx.fillRect(0,0,512,512);
+    ctx.fillStyle='#4a2208'; ctx.fillRect(0,0,512,512);
     const slatW = 32;
     for(let x=0; x<512; x+=slatW){
-      ctx.fillStyle = (Math.floor(x/slatW) % 2 === 0)? '#783e16' : '#63310f';
+      ctx.fillStyle = (Math.floor(x/slatW) % 2 === 0)? '#54280b' : '#421d06';
       ctx.fillRect(x+1, 0, slatW-2, 512);
-      ctx.strokeStyle = 'rgba(25,8,0,0.65)';
+      ctx.strokeStyle = 'rgba(18,5,0,0.8)';
       ctx.lineWidth = 2;
       ctx.strokeRect(x+1, 0, slatW-2, 512);
     }
@@ -1842,102 +1871,114 @@ const Props={
     return tex;
   },
 
-  /* ---- Cork Noticeboard Texture (High-Res 1024x1024) ---- */
+  /* ---- Cork Noticeboard Texture (Rich Granulated Cork & Realistic Pinned Cards) ---- */
   corkTexture(type){
     const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
     const ctx=cv.getContext('2d');
-    ctx.fillStyle='#c88e4d'; ctx.fillRect(0,0,1024,1024);
-    ctx.fillStyle='rgba(90,45,10,0.25)';
-    for(let i=0; i<1400; i++){
+    ctx.fillStyle='#6c3b17'; ctx.fillRect(0,0,1024,1024);
+    ctx.fillStyle='rgba(30,12,2,0.45)';
+    for(let i=0; i<1600; i++){
       ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*5+1, Math.random()*5+1);
+    }
+    ctx.fillStyle='rgba(180,110,60,0.2)';
+    for(let i=0; i<400; i++){
+      ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*3+1, Math.random()*3+1);
     }
     
     if(type === 'rules'){
-      ctx.fillStyle='#0f172a';
-      ctx.font='bold 52px "Fredoka", sans-serif';
+      // Header Plaque
+      ctx.fillStyle='#1e293b';
+      ctx.beginPath(); ctx.roundRect(160, 24, 704, 68, 16); ctx.fill();
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3; ctx.stroke();
+      ctx.fillStyle='#fef08a';
+      ctx.font='bold 36px "Fredoka", sans-serif';
       ctx.textAlign='center';
-      ctx.fillText('💡 SMART DIGITAL HABITS', 512, 80);
+      ctx.fillText('💡 SMART DIGITAL HABITS', 512, 68);
       
-      // Note 1: Passwords (Yellow)
-      ctx.fillStyle='#fef08a'; ctx.fillRect(48, 120, 430, 380);
-      ctx.strokeStyle='#ca8a04'; ctx.lineWidth=4; ctx.strokeRect(48, 120, 430, 380);
-      ctx.fillStyle='#eab308'; ctx.beginPath(); ctx.arc(263, 145, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#451a03'; ctx.font='bold 38px sans-serif'; ctx.textAlign='left';
+      // Note 1: Passwords (Amber Parchment)
+      ctx.fillStyle='#fef3c7'; ctx.fillRect(52, 120, 422, 380);
+      ctx.strokeStyle='#d97706'; ctx.lineWidth=4; ctx.strokeRect(52, 120, 422, 380);
+      ctx.fillStyle='#b45309'; ctx.beginPath(); ctx.arc(263, 145, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#451a03'; ctx.font='bold 36px sans-serif'; ctx.textAlign='left';
       ctx.fillText('🔒 Passwords Safe', 76, 205);
-      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.font='bold 27px sans-serif'; ctx.fillStyle='#1e293b';
       ctx.fillText('• Keep passwords private', 76, 265);
       ctx.fillText('• Never share with friends', 76, 315);
       ctx.fillText('• Use numbers & symbols', 76, 365);
-      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#b45309';
+      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#9a3412';
       ctx.fillText('Shield your accounts! 🛡️', 76, 435);
       
-      // Note 2: Screen Balance (Cyan)
-      ctx.fillStyle='#bae6fd'; ctx.fillRect(546, 120, 430, 380);
-      ctx.strokeStyle='#0284c7'; ctx.lineWidth=4; ctx.strokeRect(546, 120, 430, 380);
+      // Note 2: Screen Balance (Sky Card)
+      ctx.fillStyle='#e0f2fe'; ctx.fillRect(550, 120, 422, 380);
+      ctx.strokeStyle='#0284c7'; ctx.lineWidth=4; ctx.strokeRect(550, 120, 422, 380);
       ctx.fillStyle='#0284c7'; ctx.beginPath(); ctx.arc(761, 145, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#0c4a6e'; ctx.font='bold 38px sans-serif';
+      ctx.fillStyle='#0c4a6e'; ctx.font='bold 36px sans-serif';
       ctx.fillText('⏱️ Screen Balance', 574, 205);
-      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.font='bold 27px sans-serif'; ctx.fillStyle='#1e293b';
       ctx.fillText('• Follow 20-20-20 rule', 574, 265);
       ctx.fillText('• Look 20ft away for 20s', 574, 315);
       ctx.fillText('• Stretch, blink & hydrate', 574, 365);
-      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#0284c7';
+      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#0369a1';
       ctx.fillText('Rest your eyes! 💧✨', 574, 435);
       
-      // Note 3: Kindness (Green)
-      ctx.fillStyle='#bbf7d0'; ctx.fillRect(48, 540, 430, 420);
-      ctx.strokeStyle='#16a34a'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 430, 420);
+      // Note 3: Kindness (Mint Card)
+      ctx.fillStyle='#dcfce7'; ctx.fillRect(52, 540, 422, 420);
+      ctx.strokeStyle='#16a34a'; ctx.lineWidth=4; ctx.strokeRect(52, 540, 422, 420);
       ctx.fillStyle='#16a34a'; ctx.beginPath(); ctx.arc(263, 565, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#052e16'; ctx.font='bold 38px sans-serif';
+      ctx.fillStyle='#052e16'; ctx.font='bold 36px sans-serif';
       ctx.fillText('🤝 Kindness Online', 76, 625);
-      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.font='bold 27px sans-serif'; ctx.fillStyle='#1e293b';
       ctx.fillText('• Be polite & encouraging', 76, 685);
       ctx.fillText('• Say helpful, kind words', 76, 735);
       ctx.fillText('• Stand up to cyberbullies', 76, 785);
-      ctx.font='bold 32px sans-serif'; ctx.fillStyle='#15803d';
+      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#15803d';
       ctx.fillText('Make friends happy! 🌟', 76, 855);
       
-      // Note 4: Create & Learn (Pink)
-      ctx.fillStyle='#fbcfe8'; ctx.fillRect(546, 540, 430, 420);
-      ctx.strokeStyle='#db2777'; ctx.lineWidth=4; ctx.strokeRect(546, 540, 430, 420);
+      // Note 4: Create & Learn (Rose Card)
+      ctx.fillStyle='#fce7f3'; ctx.fillRect(550, 540, 422, 420);
+      ctx.strokeStyle='#db2777'; ctx.lineWidth=4; ctx.strokeRect(550, 540, 422, 420);
       ctx.fillStyle='#db2777'; ctx.beginPath(); ctx.arc(761, 565, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#500724'; ctx.font='bold 38px sans-serif';
+      ctx.fillStyle='#500724'; ctx.font='bold 36px sans-serif';
       ctx.fillText('🎨 Create & Explore', 574, 625);
-      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#1e293b';
+      ctx.font='bold 27px sans-serif'; ctx.fillStyle='#1e293b';
       ctx.fillText('• Code exciting games 💻', 574, 685);
       ctx.fillText('• Paint digital artworks 🎨', 574, 735);
       ctx.fillText('• Discover space science 🚀', 574, 785);
-      ctx.font='bold 34px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#9d174d';
+      ctx.font='bold 32px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#9d174d';
       ctx.fillText('⭐ Be a Creator! ⭐', 761, 865);
     } else {
-      ctx.fillStyle='#0f172a';
-      ctx.font='bold 52px "Fredoka", sans-serif';
+      // Header Plaque
+      ctx.fillStyle='#1e293b';
+      ctx.beginPath(); ctx.roundRect(160, 24, 704, 68, 16); ctx.fill();
+      ctx.strokeStyle='#eab308'; ctx.lineWidth=3; ctx.stroke();
+      ctx.fillStyle='#fef08a';
+      ctx.font='bold 36px "Fredoka", sans-serif';
       ctx.textAlign='center';
-      ctx.fillText('🌟 STAR EXPLORERS 🌟', 512, 80);
+      ctx.fillText('🌟 STAR EXPLORERS 🌟', 512, 68);
       
       // Golden Certificate
-      ctx.fillStyle='#ffffff'; ctx.fillRect(48, 120, 928, 380);
-      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=6; ctx.strokeRect(56, 128, 912, 364);
-      ctx.fillStyle='#b45309'; ctx.font='bold 42px sans-serif';
+      ctx.fillStyle='#fef9c3'; ctx.fillRect(52, 120, 920, 380);
+      ctx.strokeStyle='#ca8a04'; ctx.lineWidth=6; ctx.strokeRect(60, 128, 904, 364);
+      ctx.fillStyle='#78350f'; ctx.font='bold 40px sans-serif';
       ctx.fillText('🏆 CLASS 6-A DIGITAL HONORS 🏆', 512, 205);
-      ctx.font='bold 28px sans-serif'; ctx.fillStyle='#334155';
+      ctx.font='bold 27px sans-serif'; ctx.fillStyle='#334155';
       ctx.fillText('Awarded for 100% safe, curious & creative digital exploration!', 512, 265);
-      ctx.font='bold 46px sans-serif'; ctx.fillStyle='#ea580c';
+      ctx.font='bold 44px sans-serif'; ctx.fillStyle='#c2410c';
       ctx.fillText('⭐ Aarav • Meera • Explorer ⭐', 512, 345);
-      ctx.font='bold 30px sans-serif'; ctx.fillStyle='#059669';
+      ctx.font='bold 29px sans-serif'; ctx.fillStyle='#047857';
       ctx.fillText('Certified Internet Smart Champion 🎓', 512, 415);
       
       // Schedule Card
-      ctx.fillStyle='#fef3c7'; ctx.fillRect(48, 540, 928, 420);
-      ctx.strokeStyle='#d97706'; ctx.lineWidth=4; ctx.strokeRect(48, 540, 928, 420);
-      ctx.fillStyle='#78350f'; ctx.font='bold 40px sans-serif';
+      ctx.fillStyle='#fed7aa'; ctx.fillRect(52, 540, 920, 420);
+      ctx.strokeStyle='#b45309'; ctx.lineWidth=4; ctx.strokeRect(52, 540, 920, 420);
+      ctx.fillStyle='#451a03'; ctx.font='bold 38px sans-serif';
       ctx.fillText('📅 DIGITAL LAB QUESTS', 512, 615);
-      ctx.font='bold 30px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#1e293b';
+      ctx.font='bold 29px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#1e293b';
       ctx.fillText('• Chapter 01: Welcome & Connecting to the Web', 90, 685);
       ctx.fillText('• Chapter 02: How Data Packets Travel Globally', 90, 745);
       ctx.fillText('• Chapter 03: Exploring Digital City Hubs', 90, 805);
       ctx.fillText('• Chapter 04: Habits & The Internet Balance Scale', 90, 865);
-      ctx.font='38px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#d97706';
+      ctx.font='36px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#b45309';
       ctx.fillText('⭐  ⭐  ⭐  ⭐  ⭐', 512, 925);
     }
     const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
@@ -1948,69 +1989,58 @@ const Props={
     const cv=document.createElement('canvas'); cv.width=1024; cv.height=1024;
     const ctx=cv.getContext('2d');
     
+    // Rainy / moody overcast sky gradient
     const skyGrad=ctx.createLinearGradient(0,0,0,1024);
-    skyGrad.addColorStop(0,'#0284c7');
-    skyGrad.addColorStop(0.4,'#38bdf8');
-    skyGrad.addColorStop(0.7,'#7dd3fc');
-    skyGrad.addColorStop(1,'#bae6fd');
+    skyGrad.addColorStop(0,'#1e293b');
+    skyGrad.addColorStop(0.35,'#334155');
+    skyGrad.addColorStop(0.7,'#475569');
+    skyGrad.addColorStop(1,'#64748b');
     ctx.fillStyle=skyGrad; ctx.fillRect(0,0,1024,1024);
     
-    const sunGrad=ctx.createRadialGradient(720, 220, 20, 720, 220, 180);
-    sunGrad.addColorStop(0, '#ffffff');
-    sunGrad.addColorStop(0.25, '#fef08a');
-    sunGrad.addColorStop(0.6, 'rgba(253, 224, 71, 0.4)');
-    sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
-    ctx.fillStyle=sunGrad; ctx.beginPath(); ctx.arc(720, 220, 180, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fef08a'; ctx.beginPath(); ctx.arc(720, 220, 70, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(720, 220, 45, 0, Math.PI*2); ctx.fill();
-    
-    const drawCloud = (baseX, baseY, s) => {
-      ctx.fillStyle='rgba(255,255,255,0.92)';
+    // Distant soft rain cloud haze
+    const drawRainCloud = (baseX, baseY, s, alpha) => {
+      ctx.fillStyle=`rgba(148, 163, 184, ${alpha||0.5})`;
       const puffs = [
-        [0, 0, 40*s], [30*s, -15*s, 48*s], [70*s, -20*s, 56*s], 
-        [110*s, -10*s, 48*s], [140*s, 0, 38*s], [60*s, 10*s, 45*s]
+        [0, 0, 55*s], [40*s, -18*s, 68*s], [95*s, -25*s, 78*s], 
+        [150*s, -12*s, 65*s], [190*s, 0, 52*s], [80*s, 15*s, 60*s]
       ];
       puffs.forEach(([ox, oy, r]) => {
         ctx.beginPath(); ctx.arc(baseX + ox, baseY + oy, r, 0, Math.PI*2); ctx.fill();
       });
     };
-    drawCloud(80, 220, 1.3);
-    drawCloud(420, 320, 1.0);
-    drawCloud(680, 140, 0.9);
+    drawRainCloud(40, 200, 1.4, 0.45);
+    drawRainCloud(380, 280, 1.2, 0.55);
+    drawRainCloud(680, 180, 1.3, 0.5);
     
-    ctx.fillStyle='#93c5fd';
+    // Distant wet hills
+    ctx.fillStyle='#334155';
     ctx.beginPath();
     ctx.moveTo(0, 720);
-    ctx.quadraticCurveTo(250, 580, 500, 680);
-    ctx.quadraticCurveTo(750, 600, 1024, 690);
+    ctx.quadraticCurveTo(250, 600, 500, 680);
+    ctx.quadraticCurveTo(750, 620, 1024, 690);
     ctx.lineTo(1024, 1024); ctx.lineTo(0, 1024); ctx.fill();
     
-    ctx.fillStyle='#22c55e'; ctx.fillRect(0, 720, 1024, 304);
+    // Lush wet grass
+    ctx.fillStyle='#065f46'; ctx.fillRect(0, 720, 1024, 304);
     
-    ctx.fillStyle='#78350f';
+    // Tree trunks
+    ctx.fillStyle='#451a03';
     [[160, 700, 26, 120], [360, 660, 32, 160], [600, 710, 28, 110], [820, 650, 36, 170]].forEach(([tx,ty,tw,th])=>{
       ctx.fillRect(tx - tw/2, ty, tw, th);
     });
     
+    // Deep rain-soaked tree foliage
     const treeFoliage = [
-      [160, 600, 120, '#15803d', '#16a34a', '#22c55e'],
-      [360, 540, 150, '#14532d', '#15803d', '#16a34a'],
-      [600, 620, 130, '#166534', '#15803d', '#4ade80'],
-      [820, 520, 170, '#14532d', '#16a34a', '#22c55e'],
-      [980, 600, 120, '#15803d', '#22c55e', '#86efac']
+      [160, 600, 120, '#064e3b', '#065f46', '#047857'],
+      [360, 540, 150, '#022c22', '#064e3b', '#065f46'],
+      [600, 620, 130, '#064e3b', '#065f46', '#059669'],
+      [820, 520, 170, '#022c22', '#064e3b', '#065f46'],
+      [980, 600, 120, '#064e3b', '#065f46', '#10b981']
     ];
     treeFoliage.forEach(([tx, ty, tr, c1, c2, c3]) => {
       ctx.fillStyle=c1; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle=c2; ctx.beginPath(); ctx.arc(tx - tr*0.2, ty - tr*0.1, tr*0.75, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle=c3; ctx.beginPath(); ctx.arc(tx + tr*0.2, ty - tr*0.25, tr*0.5, 0, Math.PI*2); ctx.fill();
-    });
-    
-    ctx.strokeStyle='#1e293b'; ctx.lineWidth=3;
-    [[220,130],[260,115],[480,180],[510,165],[540,175]].forEach(([bx,by])=>{
-      ctx.beginPath();
-      ctx.arc(bx-10, by, 10, Math.PI*1.2, 0);
-      ctx.arc(bx+10, by, 10, Math.PI, Math.PI*1.8);
-      ctx.stroke();
     });
     
     const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
@@ -2024,8 +2054,8 @@ const Props={
     // 1. Hardwood Parquet Floor
     const floorMat = new T.MeshStandardMaterial({
       map: Props.classroomFloorTexture(),
-      roughness: 0.60,
-      metalness: 0.05
+      roughness: 0.82,
+      metalness: 0.02
     });
     const floor = new T.Mesh(new T.BoxGeometry(22, 0.2, 18), floorMat);
     floor.position.set(0, -0.1, 0);
@@ -2038,15 +2068,15 @@ const Props={
     const skirtR = new T.Mesh(new T.BoxGeometry(0.14, 0.32, 18), skirtMat); skirtR.position.set(10.93, 0.16, 0); envGroup.add(skirtR);
     const skirtB = new T.Mesh(new T.BoxGeometry(22, 0.32, 0.14), skirtMat); skirtB.position.set(0, 0.16, -5.93); envGroup.add(skirtB);
     
-    // 2. Classroom Walls
-    const upperWallMat = mat(0xf5e2be, {roughness: 0.85, metalness: 0.0});
+    // 2. Classroom Walls (Comfortable warm muted earth tone plaster)
+    const upperWallMat = mat(0x7c7062, {roughness: 0.95, metalness: 0.0});
     const wainscotMat = new T.MeshStandardMaterial({
       map: Props.wainscotTexture(),
       roughness: 0.75,
       metalness: 0.05
     });
-    const moldingMat = mat(0x3e1c08, {roughness: 0.7});
-    const crownMat = mat(0xd4c2a4, {roughness: 0.85});
+    const moldingMat = mat(0x321607, {roughness: 0.8});
+    const crownMat = mat(0x3a1c0b, {roughness: 0.8});
     
     // --- Back Wall ---
     const backLower = new T.Mesh(new T.BoxGeometry(22, 1.6, 0.18), wainscotMat);
@@ -2092,7 +2122,7 @@ const Props={
     envGroup.add(rightUpper);
     
     // Ceiling
-    const ceiling = box(22, 0.2, 18, 0xf0e4d0);
+    const ceiling = box(22, 0.2, 18, 0x1e293b);
     ceiling.position.set(0, 6.25, 0);
     envGroup.add(ceiling);
     
@@ -2222,19 +2252,16 @@ const Props={
       const bookMesh = box(b.w, b.h, 0.36, b.col);
       bookMesh.position.set(curX1 + b.w/2, -1.71 + b.h/2, 0.02);
       shelfGroup.add(bookMesh);
-      // Gold/White spine band
       const spine = box(b.w * 0.9, 0.06, 0.02, 0xfde047);
       spine.position.set(curX1 + b.w/2, -1.71 + b.h * 0.65, 0.20);
       shelfGroup.add(spine);
       curX1 += b.w + 0.015;
     });
-    // Bookend
     const bookEnd1 = box(0.04, 0.45, 0.38, 0x334155);
     bookEnd1.position.set(curX1 + 0.02, -1.71 + 0.225, 0.02);
     shelfGroup.add(bookEnd1);
 
     // --- Tier 2 (Middle Shelf, surface y = -0.57) ---
-    // Left side: Neat standing books
     const tier2Books = [
       {w:0.12, h:0.70, col:0x0284c7},
       {w:0.11, h:0.68, col:0xd97706},
@@ -2254,7 +2281,6 @@ const Props={
     bookEnd2.position.set(curX2 + 0.02, -0.57 + 0.20, 0.02);
     shelfGroup.add(bookEnd2);
 
-    // Right side of middle shelf: Horizontally stacked books resting neatly
     const stack1 = box(0.58, 0.12, 0.38, 0x15803d);
     stack1.position.set(0.55, -0.57 + 0.06, 0.02);
     shelfGroup.add(stack1);
@@ -2285,7 +2311,6 @@ const Props={
       curX3 += b.w + 0.015;
     });
 
-    // Top of bookcase props (surface y = 1.79)
     const globeStand = cyl(0.05, 0.12, 0.16, 0xd97706, 12);
     globeStand.position.set(-0.55, 1.87, 0);
     shelfGroup.add(globeStand);
@@ -2305,19 +2330,19 @@ const Props={
     
     envGroup.add(shelfGroup);
     
-    // 9. Left Side: Sunny School Window with visible outdoor view
+    // 9. Left Side: School Window with walnut trim
     const winGroup = new T.Group();
     winGroup.position.set(-7.0, 2.8, -4.5);
     winGroup.rotation.y = 0.28;
     
-    const whiteFrameMat = mat(0xffffff, {roughness: 0.5});
-    const frameL = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    const woodFrameMat = mat(0x3a1c0b, {roughness: 0.75});
+    const frameL = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), woodFrameMat);
     frameL.position.set(-1.23, 0, 0.02); winGroup.add(frameL);
-    const frameR = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), whiteFrameMat);
+    const frameR = new T.Mesh(new T.BoxGeometry(0.14, 3.4, 0.14), woodFrameMat);
     frameR.position.set(1.23, 0, 0.02); winGroup.add(frameR);
-    const frameT = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    const frameT = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), woodFrameMat);
     frameT.position.set(0, 1.63, 0.02); winGroup.add(frameT);
-    const frameB = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), whiteFrameMat);
+    const frameB = new T.Mesh(new T.BoxGeometry(2.6, 0.14, 0.14), woodFrameMat);
     frameB.position.set(0, -1.63, 0.02); winGroup.add(frameB);
     
     const winSill = box(2.8, 0.14, 0.38, 0x4a2208);
@@ -2331,9 +2356,9 @@ const Props={
     skyPane.position.set(0, 0, -0.01);
     winGroup.add(skyPane);
     
-    const mH1 = box(2.36, 0.06, 0.05, 0xffffff); mH1.position.set(0, -0.45, 0.03); winGroup.add(mH1);
-    const mH2 = box(2.36, 0.06, 0.05, 0xffffff); mH2.position.set(0, 0.65, 0.03); winGroup.add(mH2);
-    const mV = box(0.06, 3.2, 0.05, 0xffffff); mV.position.set(0, 0, 0.03); winGroup.add(mV);
+    const mH1 = box(2.36, 0.06, 0.05, 0x3a1c0b); mH1.position.set(0, -0.45, 0.03); winGroup.add(mH1);
+    const mH2 = box(2.36, 0.06, 0.05, 0x3a1c0b); mH2.position.set(0, 0.65, 0.03); winGroup.add(mH2);
+    const mV = box(0.06, 3.2, 0.05, 0x3a1c0b); mV.position.set(0, 0, 0.03); winGroup.add(mV);
     
     const potL = Props.plant();
     potL.scale.set(1.3, 1.3, 1.3);
@@ -2392,17 +2417,17 @@ const Props={
       shade.position.set(lx, 4.8, lz);
       envGroup.add(shade);
       
-      const bulb = sph(0.08, 0xffedd5, {emissive: 0xffd166, emissiveIntensity: 1.0});
+      const bulb = sph(0.08, 0xffedd5, {emissive: 0xffd166, emissiveIntensity: 0.6});
       bulb.position.set(lx, 4.75, lz);
       envGroup.add(bulb);
     });
     
-    // 12. Calibrated Warm Ambient Lighting
-    const ceilingWarmLight = new T.PointLight(0xffedd5, 0.85, 14);
+    // 12. Calibrated Warm Ambient Lighting (Balanced & non-overexposed)
+    const ceilingWarmLight = new T.PointLight(0xffedd5, 0.35, 12);
     ceilingWarmLight.position.set(0, 4.8, -1.0);
     envGroup.add(ceilingWarmLight);
     
-    const boardSpot = new T.SpotLight(0xfffaea, 0.75, 10, Math.PI/4, 0.5);
+    const boardSpot = new T.SpotLight(0xfffaea, 0.30, 8, Math.PI/4, 0.5);
     boardSpot.position.set(0, 4.8, -3.0);
     boardSpot.target.position.set(0, 2.82, -5.82);
     envGroup.add(boardSpot);
@@ -2425,8 +2450,9 @@ const Props={
     if(icon){ const sign=iconPanel(icon,Math.min(w*0.7,1.4),Math.min(w*0.7,1.4),'#ffffff'); sign.position.set(0,h*0.62,d/2+0.05); g.add(sign); }
     return g; },
   desk(){ const g=new T.Group();
-    const top=box(2.2,0.1,1.0,0xb98b5e); top.position.y=0.95; top.receiveShadow=true; top.castShadow=true; g.add(top);
-    [[-1,-0.45],[1,-0.45],[-1,0.45],[1,0.45]].forEach(([x,z])=>{ const lg=box(0.1,0.9,0.1,0x8a6540); lg.position.set(x,0.45,z); g.add(lg); });
+    const top=box(2.2,0.1,1.0,0x4a2411); top.position.y=0.95; top.receiveShadow=true; top.castShadow=true; g.add(top);
+    const trim=box(2.24,0.03,1.04,0x271409); trim.position.y=0.92; g.add(trim);
+    [[-1,-0.45],[1,-0.45],[-1,0.45],[1,0.45]].forEach(([x,z])=>{ const lg=box(0.1,0.9,0.1,0x190d05); lg.position.set(x,0.45,z); g.add(lg); });
     return g; },
   chair(color){ const g=new T.Group(); const seat=box(0.5,0.08,0.5,color||0x4b93ec); seat.position.y=0.5; g.add(seat);
     const back=box(0.5,0.6,0.08,color||0x4b93ec); back.position.set(0,0.82,-0.22); g.add(back);
@@ -2439,13 +2465,368 @@ const Props={
     scr.position.set(0,h/2,0.045); g.add(scr);
     const lbl=makeLabel((icon?icon+' ':'')+label,{scale:0.4,fs:36,bg:'rgba(47,124,224,.95)',fg:'#fff',border:'#fff'});
     lbl.position.set(0,h/2,0.06); g.add(lbl); return g; },
-  pedestal(w,h,d,color){ const g=new T.Group(); const b=box(w,h,d,color||0xffffff); b.position.y=h/2; b.receiveShadow=true; g.add(b);
-    const trim=box(w*1.04,0.06,d*1.04,0x4b93ec); trim.position.y=h; g.add(trim); return g; },
+  pedestal(w,h,d,color){ const g=new T.Group(); const b=box(w,h,d,color||0x1e293b); b.position.y=h/2; b.receiveShadow=true; g.add(b);
+    const trim=box(w*1.04,0.06,d*1.04,0x0284c7); trim.position.y=h; g.add(trim); return g; },
   serverRack(){ const g=new T.Group(); const body=box(1.0,1.8,0.7,0x252b36); body.position.y=0.9; g.add(body);
     for(let i=0;i<5;i++){ const slot=box(0.85,0.18,0.05,0x3a4250); slot.position.set(0,0.35+i*0.3,0.34); g.add(slot);
-      const led=box(0.06,0.06,0.02,i%2===0?0x38bdf8:0x53c07a); led.position.set(-0.32,0.35+i*0.3,0.37); g.add(led); } return g; }
+      const led=box(0.06,0.06,0.02,i%2===0?0x38bdf8:0x53c07a); led.position.set(-0.32,0.35+i*0.3,0.37); g.add(led); } return g; },
 
-};;
+  /* ---- 3D Interactive Smart Habits Notebook Texture (1024x640) ---- */
+  notebookTexture(entries){
+    const cv=document.createElement('canvas'); cv.width=1024; cv.height=640;
+    const ctx=cv.getContext('2d');
+    
+    // Warm Parchment Paper Background
+    ctx.fillStyle='#fefcf6'; ctx.fillRect(0,0,1024,640);
+    
+    // Outer leather binder edge shadow & page border
+    ctx.strokeStyle='rgba(45, 20, 5, 0.2)'; ctx.lineWidth=3;
+    ctx.strokeRect(16, 16, 992, 608);
+    
+    // Left Red Margin Line
+    ctx.strokeStyle='rgba(239, 68, 68, 0.35)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(110, 20); ctx.lineTo(110, 620); ctx.stroke();
+    
+    // Blue Lined College Rule Guidelines
+    ctx.strokeStyle='rgba(59, 130, 246, 0.12)'; ctx.lineWidth=1.5;
+    for(let y=110; y<=600; y+=34){
+      ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(994, y); ctx.stroke();
+    }
+    
+    // Top Spiral Rings
+    for(let x=40; x<=980; x+=48){
+      ctx.fillStyle='#334155'; ctx.beginPath(); ctx.arc(x, 26, 6, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, 34); ctx.stroke();
+    }
+    
+    // Notebook Header Plaque
+    ctx.fillStyle='#1e3a8a';
+    ctx.beginPath(); ctx.roundRect(140, 42, 744, 52, 12); ctx.fill();
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.font='bold 28px "Fredoka", sans-serif'; ctx.fillStyle='#fef08a'; ctx.textAlign='center';
+    ctx.fillText('📓 AARAV & MEERA\'S SMART HABITS NOTEBOOK', 512, 77);
+    
+    // 4 Habit Entry Slots
+    const allHabits = [
+      {
+        num: '1', title: 'Smart Research Superpower',
+        text: 'Search curated educational science websites & verified encyclopedias for schoolwork.',
+        xp: '+25 XP'
+      },
+      {
+        num: '2', title: 'Kindness & Bullying Defense',
+        text: 'Never forward mean memes; protect classmates and share encouraging words online.',
+        xp: '+25 XP'
+      },
+      {
+        num: '3', title: 'Hands-on Creator Power',
+        text: 'Follow game coding & digital art tutorials to build real playable projects.',
+        xp: '+25 XP'
+      },
+      {
+        num: '4', title: 'Healthy Sleep & Screen Balance',
+        text: 'Power down screens at bedtime; rest eyes and brain for a fresh tomorrow.',
+        xp: '+25 XP'
+      }
+    ];
+
+    entries = entries || [];
+    
+    allHabits.forEach((h, idx)=>{
+      const y = 145 + idx * 115;
+      const isUnlocked = entries.includes(idx);
+      
+      if(isUnlocked){
+        // Glowing Gold/Green Unlocked Card
+        ctx.fillStyle='#f0fdf4';
+        ctx.beginPath(); ctx.roundRect(130, y-26, 840, 100, 12); ctx.fill();
+        ctx.strokeStyle='#16a34a'; ctx.lineWidth=2.5; ctx.stroke();
+        
+        // Star Stack Badge
+        const starsStr = '⭐'.repeat(idx + 1);
+        ctx.font='28px sans-serif'; ctx.textAlign='left';
+        ctx.fillText(starsStr, 145, y+16);
+        
+        // Habit Title & Text
+        ctx.fillStyle='#065f46'; ctx.font='bold 24px "Fredoka", sans-serif';
+        ctx.fillText(`Habit #${h.num}: ${h.title}`, 280, y+4);
+        ctx.fillStyle='#1e293b'; ctx.font='600 19px "Nunito", sans-serif';
+        ctx.fillText(h.text, 280, y+34);
+        
+        // XP Pill
+        ctx.fillStyle='#15803d'; ctx.beginPath(); ctx.roundRect(855, y-14, 95, 34, 10); ctx.fill();
+        ctx.font='bold 16px sans-serif'; ctx.fillStyle='#ffffff'; ctx.textAlign='center';
+        ctx.fillText(h.xp, 902, y+9);
+      } else {
+        // Locked / Pending Slot
+        ctx.fillStyle='rgba(241, 245, 249, 0.7)';
+        ctx.beginPath(); ctx.roundRect(130, y-26, 840, 100, 12); ctx.fill();
+        ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.setLineDash([8, 6]); ctx.stroke(); ctx.setLineDash([]);
+        
+        ctx.font='26px sans-serif'; ctx.textAlign='left';
+        ctx.fillText('🔒', 150, y+18);
+        ctx.fillStyle='#64748b'; ctx.font='bold 22px "Fredoka", sans-serif';
+        ctx.fillText(`[ Habit #${h.num} Pending: Solve Scenario ${h.num} to write smart habit... ]`, 210, y+18);
+      }
+    });
+
+    if(entries.length === 4){
+      ctx.fillStyle='rgba(245, 158, 11, 0.95)';
+      ctx.beginPath(); ctx.roundRect(280, 580, 464, 46, 12); ctx.fill();
+      ctx.strokeStyle='#ffffff'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.font='bold 22px "Fredoka", sans-serif'; ctx.fillStyle='#ffffff'; ctx.textAlign='center';
+      ctx.fillText('🏆 100% SMART HABITS MASTERED! 🌟', 512, 611);
+    }
+    
+    const tex=new T.CanvasTexture(cv); tex.anisotropy=4; return tex;
+  },
+
+  /* ---- 3D Open Student Notebook with Pen ---- */
+  notebook3D(entries){
+    const g = new T.Group();
+    
+    // Leather notebook folder base
+    const folder = box(1.58, 0.03, 1.08, 0x1e3a8a);
+    folder.position.y = 0.015; g.add(folder);
+    
+    // Open parchment paper surface
+    const pageTex = Props.notebookTexture(entries);
+    const pageMat = new T.MeshStandardMaterial({
+      map: pageTex, roughness: 0.85, metalness: 0.02
+    });
+    const pages = new T.Mesh(new T.PlaneGeometry(1.5, 1.0), pageMat);
+    pages.rotation.x = -Math.PI/2;
+    pages.position.set(0, 0.035, 0);
+    g.add(pages);
+    
+    // Gold Spiral Coil across spine
+    const spiral = cyl(0.02, 0.02, 1.48, 0xd4af37, 12);
+    spiral.rotation.z = Math.PI/2;
+    spiral.position.set(0, 0.045, -0.47);
+    g.add(spiral);
+    
+    // Fountain Pen beside notebook
+    const penBody = cyl(0.016, 0.016, 0.52, 0x0284c7, 12);
+    penBody.rotation.z = Math.PI/3;
+    penBody.position.set(0.72, 0.038, 0.2);
+    g.add(penBody);
+    const penNib = cyl(0.016, 0.002, 0.08, 0xf59e0b, 10);
+    penNib.rotation.z = Math.PI/3;
+    penNib.position.set(0.96, 0.038, 0.34);
+    g.add(penNib);
+    
+    g.userData.pages = pages;
+    g.userData.pageMat = pageMat;
+    g.userData.updateEntries = (newEntries) => {
+      const newTex = Props.notebookTexture(newEntries);
+      pages.material.map = newTex;
+      pages.material.needsUpdate = true;
+    };
+    
+    return g;
+  },
+
+  /* ---- 2-Sheet Habit Board Texture (1024x512) for Chapter 4 ---- */
+  habitBoardTexture(completedHabits, activeBadIdx){
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
+    const ctx = cv.getContext('2d');
+    
+    completedHabits = completedHabits || [];
+    
+    // Chalkboard Base with subtle dust texture
+    ctx.fillStyle = '#183324'; ctx.fillRect(0, 0, 1024, 512);
+    ctx.fillStyle = 'rgba(255,255,255,0.035)';
+    for(let i=0; i<350; i++){
+      ctx.fillRect(Math.random()*1024, Math.random()*512, Math.random()*50+10, Math.random()*5+1);
+    }
+    
+    // Header Banner
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.roundRect(140, 12, 744, 52, 12); ctx.fill();
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.font = 'bold 25px "Fredoka", sans-serif'; ctx.fillStyle = '#fef08a'; ctx.textAlign = 'center';
+    ctx.fillText('💡 DIGITAL HABITS: GOOD CHOICES vs NOT SO GOOD 🧠', 512, 47);
+    
+    // Middle Dotted Chalk Divider
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; ctx.lineWidth = 3; ctx.setLineDash([12, 8]);
+    ctx.beginPath(); ctx.moveTo(512, 74); ctx.lineTo(512, 500); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Habits Data
+    const goodHabits = [
+      {num:'1', title:'Science Research', desc:'Curated science encyclopedias & verified sites.'},
+      {num:'2', title:'Kindness & Defense', desc:'Delete mean memes; share encouraging words.'},
+      {num:'3', title:'Creator Power', desc:'Follow code & art tutorials to build games.'},
+      {num:'4', title:'Sleep Balance', desc:'Screens off at bedtime for deep sleep & memory.'}
+    ];
+    
+    const badHabits = [
+      {num:'1', title:'Endless Scrolling', desc:'2+ hours of random viral video reels.'},
+      {num:'2', title:'Forwarding Gossip', desc:'Sending mean memes to be cool in chats.'},
+      {num:'3', title:'Passive Watching', desc:'Daydreaming through tutorials without coding.'},
+      {num:'4', title:'Late-Night Screens', desc:'Glued to screens in the dark past 1:00 AM.'}
+    ];
+    
+    // ==========================================
+    // LEFT SHEET: GREEN PINNED PAPER (GOOD CHOICES)
+    // ==========================================
+    const lx = 32, ly = 78, lw = 460, lh = 420;
+    
+    // Drop shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.roundRect(lx+6, ly+6, lw, lh, 16); ctx.fill();
+    
+    // Green Paper sheet background
+    ctx.fillStyle = '#f0fdf4';
+    ctx.beginPath(); ctx.roundRect(lx, ly, lw, lh, 16); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3.5; ctx.stroke();
+    
+    // Left Paper Header Plaque
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath(); ctx.roundRect(lx + 20, ly + 14, lw - 40, 46, 10); ctx.fill();
+    ctx.font = 'bold 21px "Fredoka", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+    ctx.fillText('✅ GOOD CHOICES ⭐ (HELPFUL)', lx + lw/2, ly + 44);
+    
+    // Pushpins on corners
+    [lx + 16, lx + lw - 16].forEach(px => {
+      ctx.fillStyle = '#16a34a'; ctx.beginPath(); ctx.arc(px, ly + 14, 8, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#052e16'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px - 2, ly + 12, 2.5, 0, Math.PI*2); ctx.fill();
+    });
+    
+    // 4 Good Habit Slots
+    goodHabits.forEach((gh, idx) => {
+      const sy = ly + 72 + idx * 82;
+      const isDone = completedHabits.includes(idx);
+      
+      if(isDone){
+        ctx.fillStyle = '#dcfce7';
+        ctx.beginPath(); ctx.roundRect(lx + 14, sy, lw - 28, 72, 10); ctx.fill();
+        ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2.5; ctx.stroke();
+        
+        ctx.font = '22px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('⭐'.repeat(idx + 1), lx + 22, sy + 32);
+        
+        ctx.fillStyle = '#065f46'; ctx.font = 'bold 18px "Fredoka", sans-serif';
+        ctx.fillText(`Habit #${gh.num}: ${gh.title} ✔`, lx + 115, sy + 30);
+        ctx.fillStyle = '#1e293b'; ctx.font = '600 13.5px "Nunito", sans-serif';
+        ctx.fillText(gh.desc, lx + 115, sy + 54);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.roundRect(lx + 14, sy, lw - 28, 72, 10); ctx.fill();
+        ctx.strokeStyle = '#bbf7d0'; ctx.lineWidth = 1.5; ctx.stroke();
+        
+        ctx.font = '20px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('⭐', lx + 24, sy + 32);
+        
+        ctx.fillStyle = '#166534'; ctx.font = 'bold 17px "Fredoka", sans-serif';
+        ctx.fillText(`Habit #${gh.num}: ${gh.title}`, lx + 62, sy + 30);
+        ctx.fillStyle = '#64748b'; ctx.font = '600 13.5px "Nunito", sans-serif';
+        ctx.fillText(gh.desc, lx + 62, sy + 54);
+      }
+    });
+    
+    // ==========================================
+    // RIGHT SHEET: RED PINNED PAPER (NOT SO GOOD)
+    // ==========================================
+    const rx = 532, ry = 78, rw = 460, rh = 420;
+    
+    // Drop shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.roundRect(rx+6, ry+6, rw, rh, 16); ctx.fill();
+    
+    // Red Paper sheet background
+    ctx.fillStyle = '#fef2f2';
+    ctx.beginPath(); ctx.roundRect(rx, ry, rw, rh, 16); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3.5; ctx.stroke();
+    
+    // Right Paper Header Plaque
+    ctx.fillStyle = '#b91c1c';
+    ctx.beginPath(); ctx.roundRect(rx + 20, ry + 14, rw - 40, 46, 10); ctx.fill();
+    ctx.font = 'bold 21px "Fredoka", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+    ctx.fillText('⚠️ NOT SO GOOD ❌ (RISKY)', rx + rw/2, ry + 44);
+    
+    // Pushpins on corners
+    [rx + 16, rx + rw - 16].forEach(px => {
+      ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(px, ry + 14, 8, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#450a0a'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px - 2, ry + 12, 2.5, 0, Math.PI*2); ctx.fill();
+    });
+    
+    // 4 Bad Habit Slots
+    badHabits.forEach((bh, idx) => {
+      const sy = ry + 72 + idx * 82;
+      const isBadFlash = (activeBadIdx === idx);
+      
+      if(isBadFlash){
+        ctx.fillStyle = '#fee2e2';
+        ctx.beginPath(); ctx.roundRect(rx + 14, sy, rw - 28, 72, 10); ctx.fill();
+        ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3; ctx.stroke();
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.roundRect(rx + 14, sy, rw - 28, 72, 10); ctx.fill();
+        ctx.strokeStyle = '#fecaca'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      
+      ctx.font = '20px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('❌', rx + 24, sy + 32);
+      
+      ctx.fillStyle = '#991b1b'; ctx.font = 'bold 17px "Fredoka", sans-serif';
+      ctx.fillText(`Trap #${bh.num}: ${bh.title}`, rx + 62, sy + 30);
+      ctx.fillStyle = '#64748b'; ctx.font = '600 13.5px "Nunito", sans-serif';
+      ctx.fillText(bh.desc, rx + 62, sy + 54);
+    });
+    
+    const tex = new T.CanvasTexture(cv); tex.anisotropy = 4; return tex;
+  },
+
+  /* ---- 3D Habit Board Mesh with 2 Pinned Paper Sheets ---- */
+  habitBoard(w, h, initialHabits){
+    const g = new T.Group();
+    w = w || 7.2; h = h || 3.6;
+    
+    // Dark walnut wooden board frame
+    const frame = box(w + 0.3, h + 0.3, 0.12, 0x4a2e16);
+    g.add(frame);
+    
+    // Board Face with Dynamic 2-Sheet Texture
+    const boardMat = new T.MeshStandardMaterial({
+      map: Props.habitBoardTexture(initialHabits, null),
+      roughness: 0.85,
+      metalness: 0.05
+    });
+    const boardFace = new T.Mesh(new T.BoxGeometry(w, h, 0.04), boardMat);
+    boardFace.position.set(0, 0, 0.06);
+    g.add(boardFace);
+    
+    // Chalk bottom ledge
+    const ledge = box(w + 0.2, 0.08, 0.22, 0x3a1c0b);
+    ledge.position.set(0, -h/2 - 0.02, 0.12);
+    g.add(ledge);
+    
+    // White & Gold Chalk sticks on ledge
+    const c1 = cyl(0.015, 0.015, 0.14, 0xffffff, 8); c1.rotation.z = Math.PI/2; c1.position.set(-0.6, -h/2 + 0.04, 0.14); g.add(c1);
+    const c2 = cyl(0.015, 0.015, 0.14, 0x22c55e, 8); c2.rotation.z = Math.PI/2; c2.position.set(-0.35, -h/2 + 0.04, 0.14); g.add(c2);
+    const c3 = cyl(0.015, 0.015, 0.14, 0xef4444, 8); c3.rotation.z = Math.PI/2; c3.position.set(0.35, -h/2 + 0.04, 0.14); g.add(c3);
+    
+    // Eraser on ledge
+    const eraser = box(0.24, 0.05, 0.1, 0x8b5a2b);
+    eraser.position.set(0.8, -h/2 + 0.04, 0.14);
+    g.add(eraser);
+    
+    g.userData.boardFace = boardFace;
+    g.userData.boardMat = boardMat;
+    g.userData.updateBoard = (completedHabits, activeBadIdx) => {
+      const newTex = Props.habitBoardTexture(completedHabits, activeBadIdx);
+      boardFace.material.map = newTex;
+      boardFace.material.needsUpdate = true;
+    };
+    
+    return g;
+  }
+
+};
 
 
 
@@ -2456,7 +2837,7 @@ const Props={
    ===================================================================== */
 registerChapter({
   id:'ch1', title:'Welcome to the Internet', logtag:'STORY',
-  bg1:'#4a90e2', bg2:'#d8ecff',
+  bg1:'#2c394b', bg2:'#475569',
   endTitle:'Chapter 1 Complete!',
   learned:[
     'The internet connects millions of computers all over the world.',
@@ -2464,22 +2845,22 @@ registerChapter({
     'It has amazing good parts, but also tricky parts we must use wisely.'
   ],
   build(root, api){
-    // Rich, warm, bright classroom lighting
+    // Balanced, comfortable warm classroom lighting (Normal exposure)
     const {amb, hemi, sun, fill} = addLights(root, 'warm');
-    amb.intensity = 1.15;
-    hemi.intensity = 0.85;
-    sun.intensity = 1.45;
-    sun.color.setHex(0xfffbeb);
+    amb.intensity = 0.50;
+    hemi.intensity = 0.35;
+    sun.intensity = 0.65;
+    sun.color.setHex(0xffedd5);
     
-    // Sunlight stream through left window
-    const windowLight = new T.DirectionalLight(0xfffaea, 1.25);
+    // Soft sunlight stream through left window
+    const windowLight = new T.DirectionalLight(0xffedd5, 0.40);
     windowLight.position.set(-8, 6, -3);
     windowLight.target.position.set(0, 1.0, -1.8);
     root.add(windowLight);
     root.add(windowLight.target);
     
-    // Warm interior fill over teacher desk and student area
-    const deskFill = new T.PointLight(0xfff7ed, 0.95, 14);
+    // Soft warm interior fill over teacher desk and student area
+    const deskFill = new T.PointLight(0xffedd5, 0.35, 10);
     deskFill.position.set(0, 3.4, -1.5);
     root.add(deskFill);
     
@@ -2525,7 +2906,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch2', title:'How Does the Internet Work?', logtag:'SIMULATION',
-  bg1:'#cfeaff', bg2:'#eef6ff',
+  bg1:'#24303f', bg2:'#384656',
   endTitle:'Chapter 2 Complete!',
   learned:[
     'Your device sends a request through Wi-Fi and a router.',
@@ -2533,7 +2914,7 @@ registerChapter({
     'Data travels as tiny packets — incredibly fast!'
   ],
   build(root, api){
-    addLights(root, 'cool'); ground(root, 0xdfeeff, 40);
+    addLights(root, 'cool'); ground(root, 0x1e293b, 40);
     
     const nodes = [
       { name:'Your Laptop', icon:'💻', x:-4.5, z:0, labelY:2.35, col:'#3b82f6', desc:'Your laptop creates a search request and splits it into tiny data packets.' },
@@ -2543,7 +2924,7 @@ registerChapter({
     ];
     
     nodes.forEach(n=>{
-      const pod = Props.pedestal(1.6, 0.8, 1.6, 0xffffff);
+      const pod = Props.pedestal(1.6, 0.8, 1.6, 0x1e293b);
       pod.position.set(n.x, 0, n.z); root.add(pod);
       
       const lbl = makeLabel(n.icon + ' ' + n.name, {
@@ -2687,7 +3068,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch3', title:'The Good Side of the Internet', logtag:'GOOD SIDE',
-  bg1:'#5db5e8', bg2:'#dcefff',
+  bg1:'#2b3848', bg2:'#415164',
   endTitle:'Chapter 3 Complete!',
   learned:[
     'The internet gives us endless knowledge, books, science & history.',
@@ -2697,10 +3078,10 @@ registerChapter({
   ],
   build(root, api){
     addLights(root, 'warm');
-    ground(root, 0x88cf82, 65, {scapeOpts:{hill:0x7ec88c, hill2:0x68bc7e, clouds:8}});
+    ground(root, 0x334155, 65, {scapeOpts:{hill:0x3f5166, hill2:0x2c3b4d, clouds:8}});
 
     // Grand City Plaza Flooring with geometric paving patterns
-    const plaza = new T.Mesh(new T.CircleGeometry(9.5, 48), new T.MeshStandardMaterial({color:0xd8e2ed, roughness:0.9}));
+    const plaza = new T.Mesh(new T.CircleGeometry(9.5, 48), new T.MeshStandardMaterial({color:0x1e293b, roughness:0.85}));
     plaza.rotation.x = -Math.PI/2; plaza.position.y = 0.02; plaza.receiveShadow = true; root.add(plaza);
     
     // Inner decorative fountain plaza ring
@@ -3447,74 +3828,333 @@ registerChapter({
 
 
 /* =====================================================================
-   CHAPTER 04: Good or Not So Good? (Habit Sorting)
-   ===================================================================== */
-
-/* =====================================================================
-   CHAPTER 04: Good or Not So Good? (Interactive Habit & Choice Simulation)
+   CHAPTER 04: Good or Not So Good? (Classroom Smart Notebook & Habit Board)
    ===================================================================== */
 registerChapter({
   id:'ch4', title:'Good or Not So Good?', logtag:'CHOICES',
-  bg1:'#74c6ef', bg2:'#ffe8ea',
+  bg1:'#2c394b', bg2:'#475569',
   endTitle:'Chapter 4 Complete!',
   learned:[
     'Helpful habits make us smarter, happier, and connected.',
     'Risky habits waste time, strain eyes, or compromise safety.',
-    'Knowing the difference is your first superpower.'
+    'Writing smart habits in our digital notebook turns good choices into lasting superpowers.'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0x9fd0a6, 40);
+    // Warm, calibrated classroom lighting
+    const {amb, hemi, sun, fill} = addLights(root, 'warm');
+    amb.intensity = 0.52; hemi.intensity = 0.38; sun.intensity = 0.68;
     
-    const podL = Props.pedestal(2.6, 0.6, 2.6, 0xd4edda); podL.position.set(-3.2, 0, -1); root.add(podL);
-    const lblL = makeLabel('✅ GOOD CHOICE', {scale:0.48, fs:36, bg:'#28a745', fg:'#fff'}); lblL.position.set(-3.2, 1.8, -1); root.add(lblL);
+    // 1. Full Rich Classroom Environment (Like Chapter 1)
+    Props.classroomEnv(root);
     
-    const podR = Props.pedestal(2.6, 0.6, 2.6, 0xf8d7da); podR.position.set(3.2, 0, -1); root.add(podR);
-    const lblR = makeLabel('❌ NOT SO GOOD', {scale:0.48, fs:36, bg:'#dc3545', fg:'#fff'}); lblR.position.set(3.2, 1.8, -1); root.add(lblR);
+    // 2. Large Classroom Habit Board with 2 Attached Paper Sheets (Back Wall)
+    const unlockedHabits = [];
+    const habitBoard = Props.habitBoard(7.2, 3.6, unlockedHabits);
+    habitBoard.position.set(0, 2.85, -5.78);
+    root.add(habitBoard);
     
-    const {b, g} = bringKids(root, -1.8, 1.8, 1.8, 1.8, 0.3);
-    camera.position.set(0, 3.4, 6.2); Cam.look.set(0, 1.4, -0.5);
+    // Top Blackboard Banner
+    const bannerCh4 = makeLabel('🧠 DIGITAL HABITS COMPARISON LAB  •  GOOD vs NOT SO GOOD 🌟', {
+      scale: 0.34, fs: 28, bg: 'rgba(23,65,42,0.95)', fg: '#fef08a', border: '#10b981'
+    });
+    bannerCh4.position.set(0, 4.45, -5.74);
+    root.add(bannerCh4);
     
+    // 3. Central Study Desk & 3D Interactive Smart Habits Notebook
+    const desk = Props.desk();
+    desk.position.set(0, 0, -1.8);
+    root.add(desk);
+    
+    const notebook = Props.notebook3D(unlockedHabits);
+    notebook.position.set(0, 0.96, -1.8);
+    notebook.scale.set(1.2, 1.2, 1.2);
+    root.add(notebook);
+    
+    // Student Chairs beside desk
+    const chairL = Props.chair(0x2563eb); chairL.position.set(-1.45, 0, -1.8); root.add(chairL);
+    const chairR = Props.chair(0xe11d48); chairR.position.set(1.45, 0, -1.8); root.add(chairR);
+    
+    // Helper function: Spawn rising 3D gold star from notebook
+    function spawnRisingStar(originVec){
+      const starGrp = new T.Group();
+      starGrp.position.copy(originVec);
+      
+      const starMat = new T.MeshStandardMaterial({color:0xfbbf24, emissive:0xf59e0b, emissiveIntensity:1.2, roughness:0.2, metalness:0.8});
+      const starMesh = new T.Mesh(new T.DodecahedronGeometry(0.24), starMat);
+      starGrp.add(starMesh);
+      
+      const ring = new T.Mesh(new T.RingGeometry(0.28, 0.36, 20), new T.MeshBasicMaterial({color:0xfde047, side:T.DoubleSide, transparent:true, opacity:0.85}));
+      ring.rotation.x = Math.PI/2;
+      starGrp.add(ring);
+      
+      const pLight = new T.PointLight(0xfde047, 1.8, 4);
+      starGrp.add(pLight);
+      
+      root.add(starGrp);
+      
+      let st = 0;
+      const ticker = (dt) => {
+        st += dt;
+        starGrp.position.y = originVec.y + (st * 1.2);
+        starGrp.position.x = originVec.x + Math.sin(st * 6) * 0.15;
+        starGrp.rotation.y += 0.1;
+        starGrp.rotation.z += 0.06;
+        ring.scale.setScalar(1 + st * 0.8);
+        if(st > 1.6){
+          root.remove(starGrp);
+        }
+      };
+      onFrame(ticker);
+    }
+    
+    // 4. Aarav & Meera stationed in classroom beside desk & habit board
+    const {b, g} = bringKids(root, -1.45, -1.5, 1.45, -1.5, 0.1);
+    camera.position.set(0, 2.35, 3.2);
+    Cam.look.set(0, 1.45, -1.8);
+    
+    // Scenarios Data
+    const scenarios = [
+      {
+        id: 0,
+        name: 'Science Homework Research',
+        icon: '🔭',
+        question: 'Scenario 1: You want to research a school science project about Mars. What is the smartest habit?',
+        optGood: '✅ Search curated educational websites & science encyclopedias',
+        optBad: '❌ Watch random viral dance reels for 2 hours',
+        goodMsg: '🎯 Fantastic! Educational websites and science articles give verified facts and keep your project on track.',
+        badMsg: '⚠️ Random video clips are fun, but they distract from homework and eat away your study time!'
+      },
+      {
+        id: 1,
+        name: 'Online Respect & Kindness',
+        icon: '🤝',
+        question: 'Scenario 2: A meme is being forwarded that makes fun of a classmate. What do you do?',
+        optGood: '✅ Delete it & do not forward — protect kindness online',
+        optBad: '❌ Forward it to friends to be popular in group chats',
+        goodMsg: '🌟 True digital courage! Stopping gossip and standing up for classmates makes the internet safer for everyone.',
+        badMsg: '⚠️ Forwarding mean posts causes hurtful cyberbullying. Always stop and think before forwarding!'
+      },
+      {
+        id: 2,
+        name: 'Hands-on Skill Building',
+        icon: '🎨',
+        question: 'Scenario 3: You discover an engaging video tutorial on game coding. How do you get real value?',
+        optGood: '✅ Follow along and code your own playable game project!',
+        optBad: '❌ Just leave it playing in the background while daydreaming',
+        goodMsg: '🚀 Brilliant creator mindset! Hands-on building turns passive screen time into real creative superpowers.',
+        badMsg: '⚠️ Passive watching without practicing won\'t build skills. Active creating makes you a digital maker!'
+      },
+      {
+        id: 3,
+        name: 'Sleep & Night Screen Moderation',
+        icon: '🌙',
+        question: 'Scenario 4: Your favorite streamer starts a late-night livestream at 10:30 PM on a school night. What is your choice?',
+        optGood: '✅ Go to sleep on time & catch the highlight replay tomorrow',
+        optBad: '❌ Stay awake until 1:00 AM glued to the screen in the dark',
+        goodMsg: '😴 Superb balance! Sleep charges your memory, health, and eyes. Recorded videos will always be there tomorrow.',
+        badMsg: '⚠️ Late-night blue light disrupts sleep and leads to fatigue at school. Sleep always comes first!'
+      }
+    ];
+    
+    let curScenario = 0;
+    
+    function renderScenarioUI(idx){
+      clearUI();
+      if(idx >= scenarios.length){
+        // All 4 habits completed!
+        notebook.userData.updateEntries([0, 1, 2, 3]);
+        habitBoard.userData.updateBoard([0, 1, 2, 3], null);
+        
+        b.expr = 'excited'; g.expr = 'happy';
+        b.pose = 'cheer'; g.pose = 'cheer';
+        drawFace(b, 'excited'); drawFace(g, 'happy');
+        
+        try { SFX.badge(); SFX.win(); } catch(e){}
+        spawnRisingStar(new T.Vector3(0, 1.2, -1.8));
+        
+        const postDlg = [
+          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_015.mp3', text:"Look at our Smart Notebook! We unlocked all 4 Gold Stars with winning internet habits!"},
+          {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_016.mp3', text:"And the Habit Board in our classroom is 100% complete! Next, let’s explore the Internet Balance Scale!"},
+          {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_017.mp3', text:"Let’s go! Time to test our screen-time moderation!"}
+        ];
+        
+        setTimeout(()=>{
+          runDialogue(postDlg, ()=>{
+            api.done({
+              msg: "Superb! You solved all 4 scenarios, filled your Smart Notebook with 4 Stars, and mastered digital moderation!",
+              learned: [
+                'You distinguished 4 positive habits from tricky digital traps on the classroom habit board.',
+                'Your Smart Habits Notebook earned 4 Gold Stars ⭐⭐⭐⭐.',
+                'You mastered proactive cyber kindness and sleep balance.'
+              ]
+            });
+          });
+        }, 500);
+        return;
+      }
+      
+      const sc = scenarios[idx];
+      const card = el('div', 'habit-scenario-card');
+      card.style.cssText = `
+        position: fixed;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(16px);
+        border: 3.5px solid #2563eb;
+        border-radius: 24px;
+        padding: 20px 28px 18px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+        z-index: 90;
+        max-width: 680px;
+        width: 94%;
+        text-align: center;
+        animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+      `;
+      
+      // Progress chips
+      let chipsHtml = '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">';
+      for(let k=0; k<scenarios.length; k++){
+        const isDone = unlockedHabits.includes(k);
+        const isCurrent = k === idx;
+        chipsHtml += `
+          <span style="
+            font-size:12px; font-weight:800; padding:4px 10px; border-radius:12px;
+            background:${isDone ? '#10b981' : (isCurrent ? '#3b82f6' : '#f1f5f9')};
+            color:${(isDone || isCurrent) ? '#fff' : '#64748b'};
+            border:1.5px solid ${isDone ? '#059669' : (isCurrent ? '#2563eb' : '#cbd5e1')};
+          ">
+            ${isDone ? '⭐ Habit ' + (k+1) + ' Saved' : (isCurrent ? '👉 Scenario ' + (k+1) : '🔒 Habit ' + (k+1))}
+          </span>
+        `;
+      }
+      chipsHtml += '</div>';
+      
+      card.innerHTML = `
+        ${chipsHtml}
+        <h3 style="margin:0 0 14px;color:#0f172a;font-size:17.5px;font-weight:900;line-height:1.45;">
+          ${sc.question}
+        </h3>
+        
+        <div id="choiceButtons" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">
+          <button id="btnGood" style="
+            flex:1;min-width:240px;padding:14px 18px;font-size:14.5px;font-weight:800;border-radius:16px;
+            background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#ffffff;border:none;cursor:pointer;
+            box-shadow:0 6px 18px rgba(16,185,129,0.35);transition:all 0.18s;text-align:left;line-height:1.35;
+          ">
+            ${sc.optGood}
+          </button>
+          
+          <button id="btnBad" style="
+            flex:1;min-width:240px;padding:14px 18px;font-size:14.5px;font-weight:800;border-radius:16px;
+            background:linear-gradient(135deg, #f87171 0%, #dc2626 100%);color:#ffffff;border:none;cursor:pointer;
+            box-shadow:0 6px 18px rgba(220,38,38,0.35);transition:all 0.18s;text-align:left;line-height:1.35;
+          ">
+            ${sc.optBad}
+          </button>
+        </div>
+        <div id="feedbackArea"></div>
+      `;
+      
+      const btnGood = card.querySelector('#btnGood');
+      const btnBad = card.querySelector('#btnBad');
+      const feedbackArea = card.querySelector('#feedbackArea');
+      
+      btnGood.onclick = () => {
+        SFX.correct();
+        try { SFX.coin(); } catch(e){}
+        addXP(25);
+        
+        // Write in notebook, highlight Left Sheet on Habit Board, and spawn rising star
+        if(!unlockedHabits.includes(idx)){
+          unlockedHabits.push(idx);
+          notebook.userData.updateEntries(unlockedHabits);
+          habitBoard.userData.updateBoard(unlockedHabits, null);
+          spawnRisingStar(new T.Vector3(0, 1.1, -1.8));
+        }
+        
+        b.pose = 'excited'; g.pose = 'wave';
+        b.expr = 'happy'; g.expr = 'happy';
+        drawFace(b, 'happy'); drawFace(g, 'happy');
+        
+        btnGood.style.pointerEvents = 'none';
+        btnBad.style.display = 'none';
+        
+        feedbackArea.innerHTML = `
+          <div style="background:#ecfdf5;border:2.5px solid #10b981;border-radius:16px;padding:12px 18px;margin-top:10px;text-align:left;animation:fade .3s;">
+            <div style="color:#065f46;font-size:14.5px;font-weight:800;line-height:1.45;margin-bottom:8px;">
+              ${sc.goodMsg}
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:13px;color:#047857;font-weight:900;">
+                ⭐ Habit #${idx+1} Written in Notebook & Pinned on Classroom Board! (+25 XP)
+              </span>
+              <button id="btnNextScenario" style="
+                background:linear-gradient(135deg, #2563eb, #1d4ed8);color:#fff;border:none;padding:9px 20px;
+                font-size:14px;font-weight:900;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.4);
+              ">
+                ${idx < scenarios.length - 1 ? 'Next Scenario ➔' : 'Complete Chapter 4 🚀'}
+              </button>
+            </div>
+          </div>
+        `;
+        
+        card.querySelector('#btnNextScenario').onclick = () => {
+          SFX.click();
+          curScenario++;
+          renderScenarioUI(curScenario);
+        };
+      };
+      
+      btnBad.onclick = () => {
+        SFX.buzz();
+        habitBoard.userData.updateBoard(unlockedHabits, idx);
+        
+        b.pose = 'think'; g.pose = 'think';
+        b.expr = 'thinking'; g.expr = 'thinking';
+        drawFace(b, 'thinking'); drawFace(g, 'thinking');
+        
+        feedbackArea.innerHTML = `
+          <div style="background:#fef2f2;border:2.5px solid #ef4444;border-radius:16px;padding:12px 18px;margin-top:10px;text-align:left;animation:fade .3s;">
+            <div style="color:#991b1b;font-size:14px;font-weight:700;line-height:1.45;margin-bottom:6px;">
+              ${sc.badMsg}
+            </div>
+            <div style="font-size:13px;color:#b91c1c;font-weight:900;">
+              💡 Look at the <span style="color:#10b981;">Green Paper Sheet</span> on the board and choose the winning habit to write it in your notebook!
+            </div>
+          </div>
+        `;
+      };
+      
+      addUI(card);
+    }
+    
+    // Chapter Intro Dialogue
+    const introDlg = [
+      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_013.mp3', text:"Look at the big board on our classroom wall! It has 2 sheets: GOOD CHOICES on the left, and NOT SO GOOD choices on the right."},
+      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_014.mp3', text:"Whenever you pick the winning habit, it gets written into our Smart Notebook with gold stars! Let’s sort all 4 scenarios!"}
+    ];
+    
+    runDialogue(introDlg, ()=>{
+      api.prompt("🧠 Select the Smart Habit for each scenario to earn Gold Stars in your Notebook!");
+      renderScenarioUI(0);
+    });
+  }
+});podR, () => {
+      SFX.buzz();
+      toast("⚠️ The red station marks risky digital habits that waste time or compromise safety.");
+    });
+    
+    // Chapter Intro Dialogue
     const introDlg = [
       {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_013.mp3', text:"Here come different internet habits. Some are great… some, not so good."},
       {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_014.mp3', text:"Easy! Drag each one into GOOD CHOICE or NOT SO GOOD. Let’s sort them!"}
     ];
     
     runDialogue(introDlg, ()=>{
-      quizChain([
-        {
-          question: "Scenario 1: You want to research a school science project about Mars. What is the best choice?",
-          options: ["✅ Search educational websites and science articles", "❌ Watch random dance reels for 2 hours"],
-          answer: 0, xp: 20,
-          afterMsg: "Educational sites and curated articles give reliable facts for schoolwork!"
-        },
-        {
-          question: "Scenario 2: A funny meme is going around that makes fun of a classmate. What is the right choice?",
-          options: ["❌ Forward it to all group chats to be popular", "✅ Do not forward it — delete it and protect kindness online"],
-          answer: 1, xp: 20,
-          afterMsg: "Thinking before forwarding stops hurtful cyberbullying!"
-        },
-        {
-          question: "Scenario 3: You find an engaging coding tutorial on YouTube. How do you get the most value?",
-          options: ["✅ Follow along and build your own game project", "❌ Just leave it running in background while playing games"],
-          answer: 0, xp: 20,
-          afterMsg: "Hands-on creating and coding builds real skills for the future!"
-        },
-        {
-          question: "Scenario 4: Your favorite streamer starts a late-night livestream at 10:30 PM on a school night. What do you do?",
-          options: ["❌ Stay up until 1:00 AM watching the entire stream", "✅ Go to sleep on time and catch the highlight replay tomorrow"],
-          answer: 1, xp: 20,
-          afterMsg: "Sleep is essential! Replays will always be there tomorrow."
-        }
-      ], ()=>{
-        const postDlg = [
-          {who:'boy', expr:'happy', pose:'cheer', audio:'audio/boy_015.mp3', text:"That was easier than I thought! Good and not-so-good aren’t so hard to tell apart."},
-          {who:'girl', expr:'thinking', pose:'point', audio:'audio/girl_016.mp3', text:"Sometimes though… the SAME thing can be good OR bad. Like gaming — a little is fun, too much isn’t."},
-          {who:'boy', expr:'thinking', pose:'think', audio:'audio/boy_017.mp3', text:"Ohh. So it’s about balance. Let’s test that next!"}
-        ];
-        runDialogue(postDlg, ()=>{
-          api.done({msg:"Superb! You solved all 4 scenarios and proved you can distinguish helpful from risky internet habits."});
-        });
-      }, api);
+      api.prompt("🧠 Select the Smart Habit for each scenario to earn Gold Stars in your Notebook!");
+      renderScenarioUI(0);
     });
   }
 });
@@ -3528,7 +4168,7 @@ registerChapter({
    ===================================================================== */
 registerChapter({
   id:'ch5', title:'The Internet Balance Scale', logtag:'BALANCE',
-  bg1:'#7bbef0', bg2:'#fff3cf',
+  bg1:'#2b3848', bg2:'#415164',
   endTitle:'Chapter 5 Complete!',
   learned:[
     'The same online activities can be wonderful OR unhealthy depending on how much time you spend.',
@@ -3537,7 +4177,7 @@ registerChapter({
     'You tested 6 real-life balance scenarios to master screen moderation.'
   ],
   build(root, api){
-    addLights(root, 'warm'); ground(root, 0xa7d7c4, 40);
+    addLights(root, 'warm'); ground(root, 0x1e293b, 40);
     
     // === High-Fidelity 3D Mechanical Balance Scale ===
     const scaleGroup = new T.Group();
