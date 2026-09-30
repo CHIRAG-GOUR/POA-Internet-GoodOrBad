@@ -703,6 +703,21 @@ function pointerToScene(clientX,clientY){
 function bindPointer(){
   const handler=(e)=>{
     if(State.paused) return;
+    // Do NOT raycast into 3D scene if clicking on interactive DOM elements / modals / buttons / HUD
+    if(e.target && (
+      e.target.tagName === 'BUTTON' ||
+      e.target.tagName === 'INPUT' ||
+      e.target.closest('button') ||
+      e.target.closest('.building-modal') ||
+      e.target.closest('.building-modal-wrap') ||
+      e.target.closest('#hud') ||
+      e.target.closest('#dialogue') ||
+      e.target.closest('.panel') ||
+      e.target.closest('#teacher') ||
+      e.target.closest('.plaza-quick-nav')
+    )){
+      return;
+    }
     const p=(e.touches&&e.touches[0])||e;
     pointerToScene(p.clientX, p.clientY);
   };
@@ -710,6 +725,16 @@ function bindPointer(){
 
   window.addEventListener('pointermove', (e)=>{
     if(State.paused || !camera || !renderer) return;
+    if(e.target && (
+      e.target.tagName === 'BUTTON' ||
+      e.target.closest('button') ||
+      e.target.closest('.building-modal') ||
+      e.target.closest('.building-modal-wrap') ||
+      e.target.closest('#hud') ||
+      e.target.closest('#dialogue')
+    )){
+      return;
+    }
     ndc.x = (e.clientX / W()) * 2 - 1;
     ndc.y = -(e.clientY / H()) * 2 + 1;
     ray.setFromCamera(ndc, camera);
@@ -3051,8 +3076,32 @@ registerChapter({
 
     let visitedSet = new Set();
 
-    // Central function to open any building card modal with full navigation & close button
+    // Central function to return to main zoomed-out kids view
+    function exitToPlazaView(){
+      SFX.click();
+      if(SFX.whoosh) SFX.whoosh();
+      clearUI();
+      // Smoothly fly camera back to main wide kids view
+      flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.85);
+      renderPlazaQuickNav();
+      if(visitedSet.size >= 4){
+        api.prompt("🎉 You explored the superpower hubs! Tap 'Next Chapter 🚀' or tap any building again!");
+      } else {
+        api.prompt(`🏙️ (${visitedSet.size}/${buildingsInfo.length} explored) Tap any building or button to explore!`);
+      }
+    }
+
+    // Central function to open any building card modal with full navigation, right arrow, and exit hubs
     function openBuildingModal(idx){
+      // Dismiss active dialogue immediately so it never overlaps or intercepts clicks
+      if(typeof _dlg !== 'undefined' && _dlg) {
+        if(typeof endDialogue === 'function') endDialogue();
+      }
+      const dlgEl = document.getElementById('dialogue');
+      if(dlgEl) dlgEl.classList.remove('show');
+
+      // Keep index safely wrapped in bounds [0 .. buildingsInfo.length - 1]
+      idx = Math.max(0, Math.min(buildingsInfo.length - 1, idx));
       const bInfo = buildingsInfo[idx];
       visitedSet.add(idx);
       SFX.pop();
@@ -3062,133 +3111,235 @@ registerChapter({
       flyCam(bInfo.grp.position.x, 2.3, bInfo.grp.position.z + 3.8, bInfo.grp.position.x, 1.6, bInfo.grp.position.z, 0.85);
 
       clearUI();
-      const card = el('div', 'building-modal');
-      card.style.cssText = `
+      const wrap = el('div', 'building-modal-wrap');
+      wrap.style.cssText = `
         position: fixed;
-        top: 38%;
+        top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(18px);
-        border: 3.5px solid ${bInfo.color};
-        border-radius: 26px;
-        padding: 26px 32px 22px;
-        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.35);
-        z-index: 95;
-        max-width: 620px;
+        z-index: 120;
+        max-width: 650px;
         width: 92%;
-        text-align: center;
+        pointer-events: auto;
         animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
       `;
 
       const hasPrev = idx > 0;
       const hasNext = idx < buildingsInfo.length - 1;
-      const allExplored = visitedSet.size >= 4;
+      const isFinalHub = idx === buildingsInfo.length - 1;
 
-      card.innerHTML = `
-        <!-- Close Button (✕) -->
-        <button id="btnModalClose" style="
+      wrap.innerHTML = `
+        <!-- Floating Right Navigation Arrow (Next Hub) -->
+        <button id="btnRightArrow" style="
           position: absolute;
-          top: 14px;
-          right: 16px;
-          background: #f1f5f9;
-          border: 2px solid #cbd5e1;
-          color: #475569;
-          font-size: 18px;
+          top: 50%;
+          right: -24px;
+          transform: translateY(-50%);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
+          border: 3.5px solid #ffffff;
+          color: #ffffff;
+          font-size: 22px;
           font-weight: 900;
-          width: 36px;
-          height: 36px;
+          width: 50px;
+          height: 50px;
           border-radius: 50%;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.2s;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        " title="Close Card and return to Plaza">✕</button>
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          box-shadow: 0 8px 24px rgba(37,99,235,0.45);
+          z-index: 130;
+        " title="Go to Next Hub (or press Right Arrow ➔)">➔</button>
 
-        <div style="display:inline-block;padding:5px 14px;background:${bInfo.color}18;color:${bInfo.color};border-radius:20px;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">
-          ${bInfo.tag}
-        </div>
-        <h3 style="margin:0 0 10px;color:#0f172a;font-size:22px;font-weight:900">${bInfo.name}</h3>
-        <p style="font-size:14.5px;line-height:1.65;color:#334155;margin:0 0 16px;text-align:left;">
-          ${bInfo.desc}
-        </p>
+        <!-- Floating Left Navigation Arrow (Previous Hub) -->
+        <button id="btnLeftArrow" style="
+          position: absolute;
+          top: 50%;
+          left: -24px;
+          transform: translateY(-50%);
+          background: #ffffff;
+          border: 3px solid #cbd5e1;
+          color: #1e293b;
+          font-size: 22px;
+          font-weight: 900;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+          z-index: 130;
+        " title="Go to Previous Hub (or press Left Arrow ⬅)">⬅</button>
 
-        <!-- Main Action Button -->
-        <div id="modalActionArea" style="margin-bottom:16px;">
-          <button id="btnBldAction" class="btn" style="background:${bInfo.color};color:#fff;padding:12px 24px;font-size:14.5px;font-weight:800;border-radius:14px;border:none;cursor:pointer;box-shadow:0 6px 18px ${bInfo.color}44;">
-            ${bInfo.actionText} ✨
-          </button>
-        </div>
+        <!-- Inner Modal Card -->
+        <div class="building-modal" style="
+          background: rgba(255, 255, 255, 0.98);
+          backdrop-filter: blur(20px);
+          border: 3.5px solid ${bInfo.color};
+          border-radius: 28px;
+          padding: 26px 36px 22px;
+          box-shadow: 0 25px 80px rgba(15, 23, 42, 0.38);
+          max-height: 86vh;
+          overflow-y: auto;
+          text-align: center;
+          position: relative;
+        ">
+          <!-- Close Button (✕) -->
+          <button id="btnModalClose" style="
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            color: #475569;
+            font-size: 18px;
+            font-weight: 900;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          " title="Exit Hubs and return to wide Plaza view">✕</button>
 
-        <!-- Navigation Bar (Previous, Next Building, Finish / Next Chapter) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:14px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
-          <div>
-            ${hasPrev ? `<button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 16px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;">◀ Previous Hub</button>` : `<span style="width:10px;"></span>`}
+          <div style="display:inline-block;padding:5px 14px;background:${bInfo.color}18;color:${bInfo.color};border-radius:20px;font-size:12px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">
+            ${bInfo.tag}
           </div>
-          <div style="font-size:13px;font-weight:700;color:#64748b;">
-            Hub ${idx + 1} of ${buildingsInfo.length} (${visitedSet.size} explored)
+          <h3 style="margin:0 0 10px;color:#0f172a;font-size:22px;font-weight:900">${bInfo.name}</h3>
+          <p style="font-size:14.5px;line-height:1.65;color:#334155;margin:0 0 14px;text-align:left;">
+            ${bInfo.desc}
+          </p>
+
+          <!-- Final Hub Banner if on last hub -->
+          ${isFinalHub ? `
+            <div style="background:#ecfdf5;border:2px solid #10b981;border-radius:14px;padding:8px 14px;margin-bottom:12px;color:#047857;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;">
+              ⭐ Final Superpower Hub! You can Zoom Out to explore more or click Next Chapter!
+            </div>
+          ` : ''}
+
+          <!-- Main Action Button -->
+          <div id="modalActionArea" style="margin-bottom:14px;">
+            <button id="btnBldAction" class="btn" style="background:${bInfo.color};color:#fff;padding:12px 24px;font-size:14.5px;font-weight:800;border-radius:14px;border:none;cursor:pointer;box-shadow:0 6px 18px ${bInfo.color}44;">
+              ${bInfo.actionText} ✨
+            </button>
           </div>
-          <div>
-            ${hasNext ? `<button id="btnNextBld" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);">Next Hub ▶</button>` : `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`}
+
+          <!-- Navigation Bar (Previous, Hub Counter & Exit Option, Next Building / Finish) -->
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:14px;border-top:1.5px solid #e2e8f0;flex-wrap:wrap;">
+            <div>
+              ${hasPrev ? `
+                <button id="btnPrevBld" style="background:#f8fafc;border:2px solid #cbd5e1;color:#334155;padding:8px 14px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                  ⬅ Prev Hub
+                </button>
+              ` : `
+                <button id="btnPrevBld" style="background:#f8fafc;border:2px solid #e2e8f0;color:#94a3b8;padding:8px 12px;font-size:13px;font-weight:700;border-radius:12px;cursor:pointer;">
+                  ↺ Hub 5
+                </button>
+              `}
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:12.5px;font-weight:800;color:#475569;background:#f1f5f9;padding:6px 10px;border-radius:10px;">
+                Hub ${idx + 1} of ${buildingsInfo.length}
+              </span>
+              <button id="btnExitHubs" style="background:#f1f5f9;border:2px solid #cbd5e1;color:#334155;padding:6px 12px;font-size:12.5px;font-weight:800;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.2s;" title="Zoom out to wide kids overview">
+                🔍 Exit Hubs
+              </button>
+            </div>
+
+            <div>
+              ${hasNext ? `
+                <button id="btnNextBld" style="background:linear-gradient(135deg, #2563eb, #1d4ed8);border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,0.3);display:flex;align-items:center;gap:5px;">
+                  Next Hub ➔
+                </button>
+              ` : `
+                <button id="btnFinishCh3" style="background:linear-gradient(135deg, #10b981, #059669);border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);display:flex;align-items:center;gap:5px;">
+                  Next Chapter 🚀
+                </button>
+              `}
+            </div>
           </div>
         </div>
       `;
 
-      // 1. Close Button handler
-      const btnClose = card.querySelector('#btnModalClose');
-      btnClose.onmouseenter = () => { btnClose.style.background = '#e2e8f0'; btnClose.style.transform = 'scale(1.08)'; };
-      btnClose.onmouseleave = () => { btnClose.style.background = '#f1f5f9'; btnClose.style.transform = 'scale(1)'; };
-      btnClose.onclick = () => {
-        SFX.click();
-        clearUI();
-        flyCam(0, 3.4, 6.8, 0, 1.5, -0.8, 0.8);
-        renderPlazaQuickNav();
-        if(visitedSet.size >= 4){
-          api.prompt("🎉 You explored the superpower hubs! Tap 'Next Chapter' or click any building again.");
-        } else {
-          api.prompt(`🏙️ (${visitedSet.size}/${buildingsInfo.length} explored) Tap any building to step inside!`);
-        }
-      };
+      // 1. Close Button & Exit Hubs Button handlers
+      const btnClose = wrap.querySelector('#btnModalClose');
+      if(btnClose) btnClose.onclick = exitToPlazaView;
 
-      // 2. Main Action Button handler
-      const btnAct = card.querySelector('#btnBldAction');
-      btnAct.onclick = () => {
-        SFX.coin();
-        addXP(30);
-        toast(bInfo.actionMsg);
-        card.querySelector('#modalActionArea').innerHTML = `
-          <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
-            ✅ ${bInfo.actionMsg}
-          </div>
-        `;
-        if(visitedSet.size >= 4 && !hasNext){
-          const nextBtnArea = card.querySelector('#btnNextBld');
-          if(nextBtnArea) nextBtnArea.outerHTML = `<button id="btnFinishCh3" style="background:#10b981;border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);">Next Chapter 🚀</button>`;
-        }
-      };
+      const btnExit = wrap.querySelector('#btnExitHubs');
+      if(btnExit){
+        btnExit.onmouseenter = () => { btnExit.style.background = '#e2e8f0'; };
+        btnExit.onmouseleave = () => { btnExit.style.background = '#f1f5f9'; };
+        btnExit.onclick = exitToPlazaView;
+      }
 
-      // 3. Previous Button handler
-      const btnPrev = card.querySelector('#btnPrevBld');
+      // 2. Right Arrow & Left Arrow handlers
+      const btnRightArrow = wrap.querySelector('#btnRightArrow');
+      if(btnRightArrow){
+        btnRightArrow.onmouseenter = () => { btnRightArrow.style.transform = 'translateY(-50%) scale(1.12)'; };
+        btnRightArrow.onmouseleave = () => { btnRightArrow.style.transform = 'translateY(-50%) scale(1)'; };
+        btnRightArrow.onclick = () => {
+          SFX.click();
+          openBuildingModal((idx + 1) % buildingsInfo.length);
+        };
+      }
+
+      const btnLeftArrow = wrap.querySelector('#btnLeftArrow');
+      if(btnLeftArrow){
+        btnLeftArrow.onmouseenter = () => { btnLeftArrow.style.transform = 'translateY(-50%) scale(1.12)'; };
+        btnLeftArrow.onmouseleave = () => { btnLeftArrow.style.transform = 'translateY(-50%) scale(1)'; };
+        btnLeftArrow.onclick = () => {
+          SFX.click();
+          openBuildingModal((idx - 1 + buildingsInfo.length) % buildingsInfo.length);
+        };
+      }
+
+      // 3. Main Action Button handler
+      const btnAct = wrap.querySelector('#btnBldAction');
+      if(btnAct){
+        btnAct.onclick = () => {
+          SFX.coin();
+          addXP(30);
+          toast(bInfo.actionMsg);
+          wrap.querySelector('#modalActionArea').innerHTML = `
+            <div style="padding:10px 16px;background:#ecfdf5;border:2px solid #10b981;border-radius:12px;color:#047857;font-weight:800;font-size:14px;">
+              ✅ ${bInfo.actionMsg}
+            </div>
+          `;
+          if(visitedSet.size >= 4 && !hasNext){
+            const nextBtnArea = wrap.querySelector('#btnNextBld');
+            if(nextBtnArea) nextBtnArea.outerHTML = `<button id="btnFinishCh3" style="background:linear-gradient(135deg, #10b981, #059669);border:none;color:#fff;padding:8px 18px;font-size:13.5px;font-weight:800;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.35);display:flex;align-items:center;gap:5px;">Next Chapter 🚀</button>`;
+          }
+        };
+      }
+
+      // 4. Previous Button handler
+      const btnPrev = wrap.querySelector('#btnPrevBld');
       if(btnPrev){
         btnPrev.onclick = () => {
           SFX.click();
-          openBuildingModal(idx - 1);
+          openBuildingModal((idx - 1 + buildingsInfo.length) % buildingsInfo.length);
         };
       }
 
-      // 4. Next Building Button handler
-      const btnNext = card.querySelector('#btnNextBld');
+      // 5. Next Building Button handler
+      const btnNext = wrap.querySelector('#btnNextBld');
       if(btnNext){
         btnNext.onclick = () => {
           SFX.click();
-          openBuildingModal(idx + 1);
+          openBuildingModal((idx + 1) % buildingsInfo.length);
         };
       }
 
-      // 5. Finish / Next Chapter Button handler
-      const btnFinish = card.querySelector('#btnFinishCh3');
+      // 6. Finish / Next Chapter Button handler
+      const btnFinish = wrap.querySelector('#btnFinishCh3');
       if(btnFinish){
         btnFinish.onclick = () => {
           SFX.chapter();
@@ -3198,7 +3349,7 @@ registerChapter({
         };
       }
 
-      addUI(card);
+      addUI(wrap);
     }
 
     // Plaza HUD Quick Navigation Pills (Always available when card is closed)
