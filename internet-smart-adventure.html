@@ -4141,22 +4141,6 @@ registerChapter({
       renderScenarioUI(0);
     });
   }
-});podR, () => {
-      SFX.buzz();
-      toast("⚠️ The red station marks risky digital habits that waste time or compromise safety.");
-    });
-    
-    // Chapter Intro Dialogue
-    const introDlg = [
-      {who:'girl', expr:'happy', pose:'point', audio:'audio/girl_013.mp3', text:"Here come different internet habits. Some are great… some, not so good."},
-      {who:'boy', expr:'excited', pose:'wave', audio:'audio/boy_014.mp3', text:"Easy! Drag each one into GOOD CHOICE or NOT SO GOOD. Let’s sort them!"}
-    ];
-    
-    runDialogue(introDlg, ()=>{
-      api.prompt("🧠 Select the Smart Habit for each scenario to earn Gold Stars in your Notebook!");
-      renderScenarioUI(0);
-    });
-  }
 });
 
 /* =====================================================================
